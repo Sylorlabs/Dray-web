@@ -45,6 +45,7 @@ const PianoRollCanvas = forwardRef<PianoRollCanvasHandle, PianoRollCanvasProps>(
     onDoubleClick
 }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const overlayRef = useRef<HTMLCanvasElement>(null);
     const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
     const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -71,9 +72,8 @@ const PianoRollCanvas = forwardRef<PianoRollCanvasHandle, PianoRollCanvasProps>(
         return () => ro.disconnect();
     }, [scrollContainerRef]);
 
-
-    // Main Render Logic
-    const renderFrame = useCallback((notesOverride?: MidiNote[]) => {
+    // STATIC LAYER: Grid, Rows, Notes
+    const renderStatic = useCallback((notesOverride?: MidiNote[]) => {
         const canvas = canvasRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext('2d', { alpha: false });
@@ -94,25 +94,25 @@ const PianoRollCanvas = forwardRef<PianoRollCanvasHandle, PianoRollCanvasProps>(
             canvas.style.height = vHeight + 'px';
         }
 
-        // Get current scroll position from the shared container ref
+        // Get current scroll position
         const scrollX = scrollContainerRef.current?.scrollLeft || 0;
         const scrollY = scrollContainerRef.current?.scrollTop || 0;
 
-        // 1. Clear Viewport
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // Reset transform to screen space
+        // Clear Viewport
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         ctx.fillStyle = '#101014'; // Match Theme bg
         ctx.fillRect(0, 0, vWidth, vHeight);
 
-        // Translate context to "World Space" relative to scroll
+        // Translate context to "World Space"
         ctx.translate(-scrollX, -scrollY);
 
-        // CULLING BOUNDS (World Space)
+        // Culling Bounds
         const startX = scrollX;
         const endX = scrollX + vWidth;
         const startY = scrollY;
         const endY = scrollY + vHeight;
 
-        // 2. Draw Rows (Alternating colors for keys)
+        // Draw Rows
         const startIndex = Math.floor(startY / NOTE_HEIGHT);
         const endIndex = Math.min(visiblePitches.length - 1, Math.ceil(endY / NOTE_HEIGHT));
 
@@ -127,7 +127,6 @@ const PianoRollCanvas = forwardRef<PianoRollCanvasHandle, PianoRollCanvasProps>(
                 ctx.fillRect(startX, y, vWidth, NOTE_HEIGHT);
             }
 
-            // Horizontal line
             ctx.strokeStyle = '#1e1e2d';
             ctx.lineWidth = 1;
             ctx.beginPath();
@@ -136,7 +135,7 @@ const PianoRollCanvas = forwardRef<PianoRollCanvasHandle, PianoRollCanvasProps>(
             ctx.stroke();
         }
 
-        // 3. Draw Vertical Grid Lines
+        // Draw Vertical Grid Lines
         const beatWidth = pixelsPerBeat;
         const subBeatWidth = beatWidth * gridSize;
         const startGridX = Math.floor(startX / subBeatWidth) * subBeatWidth;
@@ -146,7 +145,7 @@ const PianoRollCanvas = forwardRef<PianoRollCanvasHandle, PianoRollCanvasProps>(
         ctx.lineWidth = 1;
         ctx.beginPath();
         for (let x = startGridX; x <= endX; x += subBeatWidth) {
-            if (x % beatWidth < 1) continue; // Skip beats (drawn later)
+            if (x % beatWidth < 1) continue;
             ctx.moveTo(x, startY);
             ctx.lineTo(x, endY);
         }
@@ -162,9 +161,8 @@ const PianoRollCanvas = forwardRef<PianoRollCanvasHandle, PianoRollCanvasProps>(
         }
         ctx.stroke();
 
-        // 4. Draw Notes
+        // Draw Notes
         const notesToDraw = notesOverride || notes;
-
         notesToDraw.forEach(note => {
             const rowIndex = visiblePitches.indexOf(note.pitch);
             if (rowIndex === -1) return;
@@ -178,7 +176,6 @@ const PianoRollCanvas = forwardRef<PianoRollCanvasHandle, PianoRollCanvasProps>(
 
             const isSelected = selectedNoteIds.has(note.id);
 
-            // Shadow for selection
             if (isSelected) {
                 ctx.shadowColor = 'rgba(255,255,255,0.3)';
                 ctx.shadowBlur = 8;
@@ -190,7 +187,6 @@ const PianoRollCanvas = forwardRef<PianoRollCanvasHandle, PianoRollCanvasProps>(
             ctx.fillRect(x, y, w, NOTE_HEIGHT - 1);
             ctx.shadowBlur = 0;
 
-            // Label (if wide enough)
             if (w > 24) {
                 ctx.fillStyle = isSelected ? 'black' : 'rgba(0,0,0,0.6)';
                 ctx.font = 'bold 9px Inter, sans-serif';
@@ -198,7 +194,47 @@ const PianoRollCanvas = forwardRef<PianoRollCanvasHandle, PianoRollCanvasProps>(
             }
         });
 
-        // 5. Draw Selection Box
+    }, [viewportSize, scrollContainerRef, visiblePitches, notes, pixelsPerBeat, gridSize, trackColor, selectedNoteIds]);
+
+    // DYNAMIC LAYER: Selection, Playhead
+    const renderOverlay = useCallback(() => {
+        const canvas = overlayRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d', { alpha: true });
+        if (!ctx) return;
+
+        const vWidth = viewportSize.width;
+        const vHeight = viewportSize.height;
+
+        if (vWidth === 0 || vHeight === 0) return;
+
+        // Handle High DPI
+        const dpr = window.devicePixelRatio || 1;
+        if (canvas.width !== vWidth * dpr || canvas.height !== vHeight * dpr) {
+            canvas.width = vWidth * dpr;
+            canvas.height = vHeight * dpr;
+            ctx.scale(dpr, dpr);
+            canvas.style.width = vWidth + 'px';
+            canvas.style.height = vHeight + 'px';
+        }
+
+        const scrollX = scrollContainerRef.current?.scrollLeft || 0;
+        const scrollY = scrollContainerRef.current?.scrollTop || 0;
+
+        // Clear Viewport (Transparent)
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, vWidth, vHeight);
+
+        // Translate
+        ctx.translate(-scrollX, -scrollY);
+
+        // Bounds
+        const startX = scrollX;
+        const endX = scrollX + vWidth;
+        const startY = scrollY;
+        const endY = scrollY + vHeight;
+
+        // Draw Selection Box
         if (selectionBox) {
             const { x1, y1, x2, y2 } = selectionBox;
             const rx = Math.min(x1, x2);
@@ -213,9 +249,10 @@ const PianoRollCanvas = forwardRef<PianoRollCanvasHandle, PianoRollCanvasProps>(
             ctx.strokeRect(rx, ry, rw, rh);
         }
 
-        // 6. Draw Playhead
+        // Draw Playhead
         const currentBeat = getPlaybackBeat();
-        if (isPlaying || currentBeat > 0) {
+        // Always draw playhead if it's in view
+        if (currentBeat > 0 || isPlaying) {
             const headX = currentBeat * pixelsPerBeat;
             if (headX >= startX && headX <= endX) {
                 ctx.strokeStyle = '#ff4d4d';
@@ -234,10 +271,15 @@ const PianoRollCanvas = forwardRef<PianoRollCanvasHandle, PianoRollCanvasProps>(
                 ctx.fill();
             }
         }
-    }, [width, height, visiblePitches, notes, pixelsPerBeat, gridSize, trackColor, selectedNoteIds, isPlaying, selectionBox, viewportSize, scrollContainerRef]);
 
-    // SCROLL SYNCHRONIZATION:
-    // We MUST listen to scroll events on the container to trigger repaints.
+    }, [viewportSize, scrollContainerRef, selectionBox, pixelsPerBeat, isPlaying]);
+
+    const renderAll = useCallback((notesOverride?: MidiNote[]) => {
+        renderStatic(notesOverride);
+        renderOverlay();
+    }, [renderStatic, renderOverlay]);
+
+    // Scroll Sync
     useEffect(() => {
         const container = scrollContainerRef.current;
         if (!container) return;
@@ -246,7 +288,7 @@ const PianoRollCanvas = forwardRef<PianoRollCanvasHandle, PianoRollCanvasProps>(
         const handleScroll = () => {
             cancelAnimationFrame(rafId);
             rafId = requestAnimationFrame(() => {
-                renderFrame();
+                renderAll();
             });
         };
 
@@ -255,32 +297,30 @@ const PianoRollCanvas = forwardRef<PianoRollCanvasHandle, PianoRollCanvasProps>(
             container.removeEventListener('scroll', handleScroll);
             cancelAnimationFrame(rafId);
         };
-    }, [scrollContainerRef, renderFrame]);
+    }, [scrollContainerRef, renderAll]);
 
-    // PLAYBACK ANIMATION LOOP:
-    // When playing, we must aggressively re-render to animate the playhead smoothly at 60fps.
+    // Playback Loop - Only redraw overlay!
     useEffect(() => {
         if (!isPlaying) return;
 
         let rafId: number;
         const loop = () => {
-            renderFrame();
+            renderOverlay();
             rafId = requestAnimationFrame(loop);
         };
 
         rafId = requestAnimationFrame(loop);
         return () => cancelAnimationFrame(rafId);
-    }, [isPlaying, renderFrame]);
+    }, [isPlaying, renderOverlay]);
 
-    // Expose Imperative Draw
-    useImperativeHandle(ref, () => ({
-        render: (notesOverride) => renderFrame(notesOverride)
-    }));
-
-    // Auto-render on prop updates
+    // Initial / Prop Update Render
     useEffect(() => {
-        renderFrame();
-    }, [renderFrame]);
+        renderAll();
+    }, [renderAll]);
+
+    useImperativeHandle(ref, () => ({
+        render: (notesOverride) => renderAll(notesOverride)
+    }));
 
     return (
         <div
@@ -300,20 +340,47 @@ const PianoRollCanvas = forwardRef<PianoRollCanvasHandle, PianoRollCanvasProps>(
             onDoubleClick={onDoubleClick}
             onDragStart={(e) => e.preventDefault()}
         >
-            <canvas
-                ref={canvasRef}
-                style={{
-                    display: 'block',
-                    cursor: 'pointer',
-                    position: 'sticky',
-                    top: 0,
-                    left: 0,
-                    width: viewportSize.width + 'px',
-                    height: viewportSize.height + 'px'
-                }}
-            />
+            <div style={{
+                position: 'sticky',
+                top: 0,
+                left: 0,
+                width: viewportSize.width + 'px',
+                height: viewportSize.height + 'px',
+                zIndex: 1
+            }}>
+                {/* Static Layer */}
+                <canvas
+                    ref={canvasRef}
+                    style={{
+                        display: 'block',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        zIndex: 1
+                    }}
+                />
+                {/* Dynamic Overlay Layer */}
+                <canvas
+                    ref={overlayRef}
+                    style={{
+                        display: 'block',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        pointerEvents: 'none',
+                        zIndex: 2,
+                        background: 'transparent'
+                    }}
+                />
+            </div>
         </div>
     );
 });
+
+PianoRollCanvas.displayName = 'PianoRollCanvas';
 
 export default PianoRollCanvas;
