@@ -334,6 +334,19 @@ function PianoRollBase({
                     <div className={styles.prSidebar} style={{ width: SIDEBAR_WIDTH }}>
                         <div ref={sidebarScrollRef} className={styles.sidebarScroll}>
                             {visiblePitches.map((pitch) => {
+                                if (trackType === 'drums') {
+                                    const drumName = DRUM_MAP[pitch] || `Note ${pitch}`;
+                                    return (
+                                        <div
+                                            key={pitch}
+                                            className={styles.drumKey}
+                                            style={{ height: NOTE_HEIGHT }}
+                                            onMouseDown={() => playNotePreview(pitch)}
+                                        >
+                                            {drumName}
+                                        </div>
+                                    );
+                                }
                                 const name = getNoteName(pitch);
                                 const isC = name.startsWith('C') && !name.includes('#');
                                 const isBlack = isBlackKey(pitch);
@@ -372,6 +385,7 @@ function PianoRollBase({
                             trackColor={trackColor}
                             selectedNoteIds={selectedNotes}
                             isPlaying={isPlaying}
+                            isDrumTrack={trackType === 'drums'}
                             selectionBox={selectionBox}
                             onMouseDown={handleCanvasMouseDown}
                             onMouseMove={handleGridMouseMove}

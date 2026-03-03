@@ -19,6 +19,7 @@ interface PianoRollCanvasProps {
     trackColor: string;
     selectedNoteIds: Set<string>;
     isPlaying: boolean;
+    isDrumTrack?: boolean;
     selectionBox: { x1: number, y1: number, x2: number, y2: number } | null;
     scrollContainerRef: React.RefObject<HTMLDivElement | null>;
     onMouseDown: (e: React.MouseEvent) => void;
@@ -37,6 +38,7 @@ const PianoRollCanvas = forwardRef<PianoRollCanvasHandle, PianoRollCanvasProps>(
     trackColor,
     selectedNoteIds,
     isPlaying,
+    isDrumTrack = false,
     selectionBox,
     scrollContainerRef,
     onMouseDown,
@@ -119,12 +121,20 @@ const PianoRollCanvas = forwardRef<PianoRollCanvasHandle, PianoRollCanvasProps>(
         for (let i = Math.max(0, startIndex); i <= endIndex; i++) {
             const pitch = visiblePitches[i];
             const y = i * NOTE_HEIGHT;
-            const noteIndex = pitch % 12;
-            const isBlack = [1, 3, 6, 8, 10].includes(noteIndex);
 
-            if (isBlack) {
-                ctx.fillStyle = '#0a0a0e';
-                ctx.fillRect(startX, y, vWidth, NOTE_HEIGHT);
+            if (!isDrumTrack) {
+                const noteIndex = pitch % 12;
+                const isBlack = [1, 3, 6, 8, 10].includes(noteIndex);
+                if (isBlack) {
+                    ctx.fillStyle = '#0a0a0e';
+                    ctx.fillRect(startX, y, vWidth, NOTE_HEIGHT);
+                }
+            } else {
+                // Alternating subtle bands for drum rows
+                if (i % 2 === 1) {
+                    ctx.fillStyle = 'rgba(255,255,255,0.015)';
+                    ctx.fillRect(startX, y, vWidth, NOTE_HEIGHT);
+                }
             }
 
             ctx.strokeStyle = '#1e1e2d';

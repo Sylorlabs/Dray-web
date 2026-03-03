@@ -255,6 +255,28 @@
     color: #6b6258;
 }
 
+/* Drum pad row in sidebar */
+.drumKey {
+    display: flex;
+    align-items: center;
+    padding: 0 6px;
+    font-size: 9px;
+    font-weight: 600;
+    color: #a0a0c0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    cursor: pointer;
+    background: #101018;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: 0.02em;
+}
+
+.drumKey:hover {
+    background: rgba(88, 101, 242, 0.12) !important;
+    color: #c0c0ff;
+}
+
 /* ============================================ */
 /* VIEWPORT & GRID */
 /* ============================================ */
