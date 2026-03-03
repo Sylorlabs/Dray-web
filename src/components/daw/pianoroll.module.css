@@ -21,8 +21,8 @@
 .prWindow {
     width: 95vw;
     height: 85vh;
-    background: #0c0c14;
-    border: 1px solid #1e1e2d;
+    background: #0f0c0a;
+    border: 1px solid #1e1a15;
     border-radius: 12px;
     display: flex;
     flex-direction: column;
@@ -40,8 +40,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border-bottom: 1px solid #1e1e2d;
-    background: #10101a;
+    border-bottom: 1px solid #1e1a15;
+    background: #110e0c;
 }
 
 .trackInfo {
@@ -69,14 +69,15 @@
 
 .trackInst {
     font-size: 11px;
-    color: #7171a1;
+    color: #9a8f7e;
 }
 
 .drumTag {
     font-size: 9px;
     padding: 2px 6px;
-    background: #eb459e;
-    color: white;
+    background: rgba(213, 178, 97, 0.18);
+    color: #d5b261;
+    border: 1px solid rgba(213, 178, 97, 0.3);
     border-radius: 4px;
     font-weight: bold;
 }
@@ -94,7 +95,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    background: #1a1a24;
+    background: #1c1711;
     padding: 4px;
     border-radius: 8px;
 }
@@ -106,7 +107,7 @@
     align-items: center;
     gap: 6px;
     font-size: 12px;
-    color: #a4a4d1;
+    color: #c5b89a;
     background: transparent;
     border: none;
     cursor: pointer;
@@ -114,14 +115,14 @@
 }
 
 .toolBtn:hover {
-    background: #2a2a3e;
+    background: #2a2016;
     color: white;
 }
 
 .divider {
     width: 1px;
     height: 16px;
-    background: #2a2a3e;
+    background: #2a2016;
 }
 
 .deleteBtn {
@@ -141,7 +142,7 @@
 }
 
 .deleteBtnDisabled {
-    color: #58587a;
+    color: #6b6258;
     cursor: default;
 }
 
@@ -157,18 +158,18 @@
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    color: white;
+    color: #0d0b0a;
     display: flex;
     align-items: center;
     justify-content: center;
     border: none;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(88, 101, 242, 0.4);
     transition: transform 0.1s;
 }
 
 .playBtnDefault {
-    background: #5865f2;
+    background: linear-gradient(135deg, #d5b261, #b8943f);
+    box-shadow: 0 4px 12px rgba(213, 178, 97, 0.4);
 }
 
 .playBtnPlaying {
@@ -185,7 +186,7 @@
     border-radius: 50%;
     background: transparent;
     border: none;
-    color: #58587a;
+    color: #6b6258;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -194,7 +195,7 @@
 
 .closeBtn:hover {
     color: white;
-    background: #2a2a3e;
+    background: #2a2016;
 }
 
 /* ============================================ */
@@ -210,8 +211,8 @@
 /* SIDEBAR (Piano Keys) */
 /* ============================================ */
 .prSidebar {
-    background: #10101a;
-    border-right: 1px solid #1e1e2d;
+    background: #110e0c;
+    border-right: 1px solid #1e1a15;
     position: relative;
 }
 
@@ -251,7 +252,7 @@
 
 .keyNonC {
     font-weight: normal;
-    color: #58587a;
+    color: #6b6258;
 }
 
 /* ============================================ */
@@ -260,7 +261,7 @@
 .prViewport {
     flex: 1;
     overflow: auto;
-    background: #0c0c14;
+    background: #0f0c0a;
     position: relative;
 }
 
@@ -273,10 +274,10 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: #0c0c14;
-    border-top: 1px solid #1e1e2d;
+    background: #0f0c0a;
+    border-top: 1px solid #1e1a15;
     font-size: 10px;
-    color: #58587a;
+    color: #6b6258;
 }
 
 .shortcuts {
@@ -285,7 +286,7 @@
 }
 
 .shortcuts b {
-    color: #8a8ab1;
+    color: #9a8f7e;
 }
 
 /* ============================================ */
@@ -299,8 +300,8 @@
     position: absolute;
     top: calc(100% + 8px);
     right: 0;
-    background: #1a1a24;
-    border: 1px solid #2a2a3e;
+    background: #1c1711;
+    border: 1px solid #2a2016;
     border-radius: 8px;
     padding: 4px;
     z-index: 1100;
@@ -317,15 +318,15 @@
     border-radius: 4px;
     cursor: pointer;
     background: transparent;
-    color: #a4a4d1;
+    color: #c5b89a;
 }
 
 .gridOption:hover {
-    background: #2a2a3e;
+    background: #2a2016;
     color: white;
 }
 
 .gridOptionActive {
-    background: #2a2a3e;
+    background: #2a2016;
     color: #fff;
 }

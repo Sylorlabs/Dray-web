@@ -81,23 +81,24 @@
 }
 
 .play {
-    background: var(--accent-primary);
-    color: white;
+    background: linear-gradient(135deg, #d5b261, #b8943f);
+    color: #0d0b0a;
     width: 36px;
     height: 36px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    flex: 0 0 36px; /* keep fixed space so scaling doesn't shift neighbors */
+    flex: 0 0 36px;
     will-change: transform;
     transform-origin: center center;
-    position: relative; /* lift above potential overlapping elements */
-    z-index: 20; /* higher than other transport elements */
+    position: relative;
+    z-index: 20;
+    box-shadow: 0 2px 12px rgba(213, 178, 97, 0.35);
 }
 
 .play:hover {
-    background: var(--accent-primary);
+    background: linear-gradient(135deg, #e8c97a, #d5b261);
     transform: scale(1.05);
 }
 

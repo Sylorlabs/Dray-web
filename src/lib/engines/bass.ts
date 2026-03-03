@@ -304,9 +304,25 @@ class ToneBassEngine implements BassEngineInterface {
         }
 
         const n = typeof p === 'number' ? (ToneLib as any).Frequency(p, 'midi').toNote() : p;
-        const t = time ?? (ToneLib as any).now();
+        const now = (ToneLib as any).now();
+        // Ensure time is strictly in the future to prevent MonoSynth/MembraneSynth assertion
+        const t = Math.max((time ?? now), now + 0.005);
 
-        bundle.synth.triggerAttackRelease?.(n, duration, t, velocity);
+        try {
+            // Release previous note on monophonic synths before retriggering
+            if (bundle.synth.triggerRelease) {
+                try { bundle.synth.triggerRelease(t - 0.001); } catch { /* ignore */ }
+            }
+            bundle.synth.triggerAttackRelease?.(n, duration, t, velocity);
+        } catch (e: any) {
+            // Fallback: if timing assertion still fails, retry at now + safe offset
+            if (e?.message?.includes('Start time')) {
+                try {
+                    const safeTime = (ToneLib as any).now() + 0.05;
+                    bundle.synth.triggerAttackRelease?.(n, duration, safeTime, velocity);
+                } catch { /* give up silently */ }
+            }
+        }
     }
 
     /**

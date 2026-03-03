@@ -12,8 +12,8 @@
 }
 
 .modal {
-    background: #0c0c14;
-    border: 1px solid #2a2a3e;
+    background: #0f0c0a;
+    border: 1px solid #2a2016;
     border-radius: 16px;
     width: 90%;
     max-width: 480px;
@@ -26,7 +26,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 1rem 1.25rem;
-    border-bottom: 1px solid #1e1e2d;
+    border-bottom: 1px solid #1e1a15;
 }
 
 .titleRow {
@@ -45,7 +45,7 @@
 .closeBtn {
     background: none;
     border: none;
-    color: #58587a;
+    color: #6b6258;
     cursor: pointer;
     padding: 4px;
     display: flex;
@@ -77,12 +77,12 @@
 }
 
 .micIcon {
-    color: #5865f2;
+    color: #d5b261;
     margin-bottom: 1rem;
 }
 
 .initSection p {
-    color: #8a8ab1;
+    color: #9a8f7e;
     font-size: 0.875rem;
     margin-bottom: 1.5rem;
     max-width: 280px;
@@ -92,7 +92,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    background: #5865f2;
+    background: #d5b261;
     color: white;
     border: none;
     padding: 0.75rem 1.25rem;
@@ -104,7 +104,7 @@
 }
 
 .primaryBtn:hover {
-    background: #4752c4;
+    background: #b8943f;
     transform: translateY(-1px);
 }
 
@@ -117,7 +117,7 @@
     width: 100%;
     height: 200px;
     border-radius: 8px;
-    border: 1px solid #1e1e2d;
+    border: 1px solid #1e1a15;
 }
 
 .pitchDisplay {
@@ -140,7 +140,7 @@
 
 .cents {
     font-size: 0.75rem;
-    color: #8a8ab1;
+    color: #9a8f7e;
 }
 
 .controls {
@@ -217,7 +217,7 @@
 
 .results {
     background: rgba(255, 255, 255, 0.03);
-    border: 1px solid #1e1e2d;
+    border: 1px solid #1e1a15;
     border-radius: 12px;
     padding: 1rem;
     margin-top: 1rem;
@@ -225,7 +225,7 @@
 
 .noteCount {
     text-align: center;
-    color: #8a8ab1;
+    color: #9a8f7e;
     font-size: 0.875rem;
     margin-bottom: 0.75rem;
 }
@@ -243,8 +243,8 @@
 }
 
 .noteTag {
-    background: rgba(88, 101, 242, 0.15);
-    color: #5865f2;
+    background: rgba(213, 178, 97, 0.15);
+    color: #d5b261;
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
     font-size: 0.75rem;
@@ -257,18 +257,18 @@
     justify-content: center;
     gap: 0.5rem;
     width: 100%;
-    background: #57f287;
-    color: #000;
+    background: linear-gradient(135deg, #d5b261, #b8943f);
+    color: #0d0b0a;
     border: none;
     padding: 0.75rem;
     border-radius: 8px;
-    font-weight: 600;
+    font-weight: 700;
     font-size: 0.875rem;
     cursor: pointer;
     transition: all 0.2s;
 }
 
 .useBtn:hover {
-    background: #4bd674;
+    background: linear-gradient(135deg, #e8c97a, #d5b261);
     transform: translateY(-1px);
 }

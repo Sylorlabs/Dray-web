@@ -122,32 +122,38 @@ export default function Toolbar() {
           font-size: 0.875rem;
           color: var(--accent-primary);
           font-weight: 700;
+          font-family: 'JetBrains Mono', monospace;
         }
         .tempo-value {
           font-size: 0.625rem;
           color: var(--text-dim);
         }
         .btn-wingman {
-          background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-          color: white;
+          background: linear-gradient(135deg, #d5b261, #b8943f);
+          color: #0d0b0a;
           border: none;
           padding: 0.5rem 1rem;
           border-radius: var(--radius-md);
-          font-weight: 600;
+          font-weight: 700;
           font-size: 0.8125rem;
           display: flex;
           align-items: center;
           gap: 0.5rem;
-          box-shadow: 0 0 15px rgba(235, 69, 158, 0.2);
+          box-shadow: 0 0 15px rgba(213, 178, 97, 0.25);
         }
         .btn-zenith {
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid var(--border-subtle);
+          background: rgba(213, 178, 97, 0.06);
+          border: 1px solid rgba(213, 178, 97, 0.2);
           color: var(--text-main);
           padding: 0.5rem 0.75rem;
           border-radius: var(--radius-md);
           font-size: 0.75rem;
           font-weight: 600;
+          transition: background 0.2s, border-color 0.2s;
+        }
+        .btn-zenith:hover {
+          background: rgba(213, 178, 97, 0.12);
+          border-color: rgba(213, 178, 97, 0.38);
         }
       `}</style>
     </div>

@@ -12,8 +12,8 @@
 }
 
 .modal {
-    background: #0c0c14;
-    border: 1px solid #2a2a3e;
+    background: #0f0c0a;
+    border: 1px solid #2a2016;
     border-radius: 16px;
     width: 90%;
     max-width: 520px;
@@ -26,7 +26,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 1rem 1.25rem;
-    border-bottom: 1px solid #1e1e2d;
+    border-bottom: 1px solid #1e1a15;
 }
 
 .titleRow {
@@ -43,13 +43,13 @@
 }
 
 .icon {
-    color: #f79009;
+    color: #d5b261;
 }
 
 .closeBtn {
     background: none;
     border: none;
-    color: #58587a;
+    color: #6b6258;
     cursor: pointer;
     padding: 4px;
     display: flex;
@@ -73,7 +73,7 @@
 }
 
 .dropzone {
-    border: 2px dashed #2a2a3e;
+    border: 2px dashed #2a2016;
     border-radius: 12px;
     padding: 2rem;
     text-align: center;
@@ -82,23 +82,23 @@
 }
 
 .dropzone:hover {
-    border-color: #5865f2;
-    background: rgba(88, 101, 242, 0.05);
+    border-color: #d5b261;
+    background: rgba(213, 178, 97, 0.05);
 }
 
 .uploadIcon {
-    color: #58587a;
+    color: #6b6258;
     margin-bottom: 0.75rem;
 }
 
 .dropzone p {
-    color: #8a8ab1;
+    color: #9a8f7e;
     font-size: 0.875rem;
     margin: 0 0 0.5rem;
 }
 
 .hint {
-    color: #58587a;
+    color: #6b6258;
     font-size: 0.75rem;
 }
 
@@ -111,7 +111,7 @@
 }
 
 .fileInfo svg {
-    color: #5865f2;
+    color: #d5b261;
 }
 
 .fileName {
@@ -120,7 +120,7 @@
 }
 
 .fileSize {
-    color: #58587a;
+    color: #6b6258;
     font-size: 0.75rem;
 }
 
@@ -130,12 +130,12 @@
     justify-content: center;
     gap: 0.5rem;
     width: 100%;
-    background: linear-gradient(135deg, #f79009, #f04438);
-    color: white;
+    background: linear-gradient(135deg, #d5b261, #b8943f);
+    color: #0d0b0a;
     border: none;
     padding: 0.875rem;
     border-radius: 10px;
-    font-weight: 600;
+    font-weight: 700;
     font-size: 0.9375rem;
     cursor: pointer;
     margin-top: 1rem;
@@ -144,7 +144,7 @@
 
 .processBtn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(247, 144, 9, 0.25);
+    box-shadow: 0 8px 24px rgba(213, 178, 97, 0.3);
 }
 
 .progressSection {
@@ -153,7 +153,7 @@
 
 .progressBar {
     height: 8px;
-    background: #1e1e2d;
+    background: #1e1a15;
     border-radius: 4px;
     overflow: hidden;
     margin-bottom: 0.5rem;
@@ -161,13 +161,13 @@
 
 .progressFill {
     height: 100%;
-    background: linear-gradient(90deg, #f79009, #17b169);
+    background: linear-gradient(90deg, #7a5a25, #d5b261, #f3ddb0);
     border-radius: 4px;
     transition: width 0.3s ease;
 }
 
 .progressText {
-    color: #8a8ab1;
+    color: #9a8f7e;
     font-size: 0.8125rem;
     text-align: center;
     display: block;
@@ -182,7 +182,7 @@
 
 .stemCard {
     background: rgba(255, 255, 255, 0.03);
-    border: 1px solid #1e1e2d;
+    border: 1px solid #1e1a15;
     border-radius: 12px;
     padding: 1rem;
     transition: all 0.2s;
@@ -248,7 +248,7 @@
 
 .disclaimer {
     margin-top: 1.5rem;
-    color: #58587a;
+    color: #6b6258;
     font-size: 0.6875rem;
     text-align: center;
     font-style: italic;

@@ -208,26 +208,31 @@ export class AudioScheduler {
         this.nextNoteTime += secondsPer16th;
         this.current16thNote++;
 
+        // Check project-level loop from store
+        const project = useProjectStore.getState().activeProject;
+        const projectLooping = project?.isLooping && project?.loopEnd && project.loopEnd > (project.loopStart || 0);
+
         // Loop logic
-        const maxSteps = this.scopedNotes !== null ? this.scopedLoopEnd * 4 : BEATS_VISIBLE * 4;
+        let maxSteps: number;
+        let loopBackTo = 0;
+
+        if (this.scopedNotes !== null) {
+            maxSteps = this.scopedLoopEnd * 4;
+            loopBackTo = this.scopedLoopStart * 4;
+        } else if (projectLooping) {
+            maxSteps = project.loopEnd! * 4;
+            loopBackTo = (project.loopStart || 0) * 4;
+        } else {
+            maxSteps = BEATS_VISIBLE * 4;
+            loopBackTo = 0;
+        }
 
         if (this.current16thNote >= maxSteps) {
-            if (this.scopedNotes !== null) {
-                // Loop scoped playback
-                this.current16thNote = this.scopedLoopStart * 4;
-                this.scheduledNotes.clear();
-                // Reset startTime to keep timing accurate on loop
-                const secondsPerBeat = 60.0 / (this.tempoCache || 120);
-                const secondsPer16th = 0.25 * secondsPerBeat;
-                this.startTime = audioEngine.getNow() - (this.current16thNote * secondsPer16th);
-                this.nextNoteTime = audioEngine.getNow();
-            } else {
-                this.current16thNote = 0;
-                this.scheduledNotes.clear();
-                // Reset startTime to prevent timing drift on loop
-                this.startTime = audioEngine.getNow();
-                this.nextNoteTime = audioEngine.getNow();
-            }
+            this.current16thNote = loopBackTo;
+            this.scheduledNotes.clear();
+            const resetSecPer16th = 0.25 * (60.0 / (this.tempoCache || 120));
+            this.startTime = audioEngine.getNow() - (this.current16thNote * resetSecPer16th);
+            this.nextNoteTime = audioEngine.getNow();
         }
     }
 
@@ -626,6 +631,8 @@ export class AudioScheduler {
         console.log(`[AudioScheduler] Triggering Note: Track=${track.id} Pitch=${note.pitch} Time=${time} Duration=${durationSec}`);
         try {
             if (track.type === 'drums') {
+                // Set drum kit from track instrument (e.g. "808", "909", "Trap")
+                if (instrument) this.engines?.toneDrumMachine.setKit(instrument);
                 void this.engines?.toneDrumMachine.playNote(track.id, note.pitch, note.velocity, time);
             } else if (track.type === 'midi' || !track.type) {
                 // FIX: Default to 'Grand Piano' to match PianoRoll preview default (Issue: "Random sounds")

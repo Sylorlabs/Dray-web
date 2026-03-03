@@ -13,9 +13,9 @@
 .modal {
     width: 800px;
     height: 600px;
-    background: #121216;
+    background: #120e0c;
     border-radius: 12px;
-    border: 1px solid #2a2a34;
+    border: 1px solid #2a2016;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
     display: flex;
     overflow: hidden;
@@ -24,8 +24,8 @@
 
 .sidebar {
     width: 220px;
-    background: #0a0a10;
-    border-right: 1px solid #1a1a24;
+    background: #0a0807;
+    border-right: 1px solid #1c1711;
     padding: 20px 0;
     display: flex;
     flex-direction: column;
@@ -33,7 +33,7 @@
 
 .header {
     padding: 0 20px 20px;
-    border-bottom: 1px solid #1a1a24;
+    border-bottom: 1px solid #1c1711;
     margin-bottom: 10px;
 }
 
@@ -62,14 +62,14 @@
 }
 
 .navItem:hover {
-    background: #1a1a24;
+    background: #1c1711;
     color: white;
 }
 
 .navItem.active {
-    background: rgba(88, 101, 242, 0.1);
-    color: #5865f2;
-    border-right: 3px solid #5865f2;
+    background: rgba(213, 178, 97, 0.1);
+    color: #d5b261;
+    border-right: 3px solid #d5b261;
 }
 
 .content {
@@ -87,15 +87,15 @@
     font-size: 1.5rem;
     margin: 0 0 24px 0;
     padding-bottom: 16px;
-    border-bottom: 1px solid #2a2a34;
+    border-bottom: 1px solid #2a2016;
 }
 
 .settingGroup {
     margin-bottom: 30px;
-    background: #1a1a24;
+    background: #1c1711;
     border-radius: 8px;
     padding: 20px;
-    border: 1px solid #2a2a34;
+    border: 1px solid #2a2016;
 }
 
 .settingGroup h3 {
@@ -135,7 +135,7 @@
 }
 
 .select {
-    background: #0a0a10;
+    background: #0a0807;
     border: 1px solid #333;
     color: white;
     padding: 8px 12px;
@@ -145,11 +145,11 @@
 }
 
 .select:focus {
-    border-color: #5865f2;
+    border-color: #d5b261;
 }
 
 .btn {
-    background: #2a2a34;
+    background: #2a2016;
     color: white;
     border: none;
     padding: 8px 16px;
@@ -164,12 +164,12 @@
 }
 
 .btnPrimary {
-    background: #5865f2;
+    background: #d5b261;
     color: white;
 }
 
 .btnPrimary:hover {
-    background: #4752c4;
+    background: #b8943f;
 }
 
 .btnDanger {
@@ -184,7 +184,7 @@
 .meterContainer {
     width: 100%;
     height: 8px;
-    background: #0a0a10;
+    background: #0a0807;
     border-radius: 4px;
     margin-top: 12px;
     overflow: hidden;
@@ -192,7 +192,7 @@
 
 .meterBar {
     height: 100%;
-    background: linear-gradient(to right, #5865f2, #eb459e, #ff4d4d);
+    background: linear-gradient(to right, #7a5a25, #d5b261, #f3ddb0);
     width: 0%;
     transition: width 0.1s linear;
 }

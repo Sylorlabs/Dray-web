@@ -1,16 +1,23 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Cinzel_Decorative, Sora } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "../components/ThemeProvider";
 
-const inter = Inter({
+const cinzel = Cinzel_Decorative({
   subsets: ["latin"],
-  variable: "--font-inter",
+  weight: ["400", "700"],
+  variable: "--font-display",
+});
+
+const sora = Sora({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-sans",
 });
 
 export const metadata: Metadata = {
-  title: "Drey | Beginner-Friendly Web DAW",
-  description: "Drey is a powerful, free web DAW powered by Wingman AI. Create, arrange, and mix music instantly in your browser.",
+  title: "Dray | Web DAW by Sylorlabs",
+  description: "Dray is a professional web DAW powered by Wingman AI. Create, arrange, and mix music instantly in your browser — built by Sylorlabs.",
 };
 
 export default function RootLayout({
@@ -23,9 +30,9 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
       </head>
-      <body className={inter.variable} suppressHydrationWarning>
+      <body className={`${sora.variable} ${cinzel.variable}`} suppressHydrationWarning>
         <ThemeProvider>
           {children}
         </ThemeProvider>

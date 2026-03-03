@@ -97,8 +97,7 @@ function PianoRollBase({
             if (!audioEngine.isReady()) await audioEngine.initialize();
 
             if (trackType === 'drums') {
-                const sound = DRUM_MAP[pitch];
-                if (sound) await toneDrumMachine.playKick(-1, sound, 0.8);
+                await toneDrumMachine.playNote(-1, pitch, 0.8);
             } else {
                 const targetInstrument = instrument || 'Grand Piano';
                 const engineName = getEngineForInstrument(targetInstrument);

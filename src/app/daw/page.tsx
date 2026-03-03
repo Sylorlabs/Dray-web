@@ -71,12 +71,12 @@ const formatTime = (seconds: number) => {
 };
 
 // Track colors by type
-const TRACK_COLORS = ['#eb459e', '#5865f2', '#57f287', '#fee75c', '#ed4245', '#9b59b6', '#3498db', '#1abc9c'];
+const TRACK_COLORS = ['#f3ddb0', '#d5b261', '#57f287', '#fee75c', '#ed4245', '#9b59b6', '#3498db', '#1abc9c'];
 
 // Initial tracks with real MIDI data
 const INITIAL_TRACKS: Track[] = [
   {
-    id: 1, name: 'Drums', type: 'drums', color: '#eb459e', volume: 0.8, pan: 0, muted: false, soloed: false, meterL: 0, meterR: 0, instrument: '808 Kit',
+    id: 1, name: 'Drums', type: 'drums', color: '#f3ddb0', volume: 0.8, pan: 0, muted: false, soloed: false, meterL: 0, meterR: 0, instrument: '808 Kit',
     clips: [
       {
         start: 0, duration: 4, name: 'Beat 1', notes: [
@@ -89,7 +89,7 @@ const INITIAL_TRACKS: Track[] = [
     ]
   },
   {
-    id: 2, name: 'Bass', type: 'midi', color: '#5865f2', volume: 0.75, pan: 0, muted: false, soloed: false, meterL: 0, meterR: 0, instrument: 'Sub Bass',
+    id: 2, name: 'Bass', type: 'midi', color: '#d5b261', volume: 0.75, pan: 0, muted: false, soloed: false, meterL: 0, meterR: 0, instrument: 'Sub Bass',
     clips: [
       {
         start: 0, duration: 4, name: 'Sub Bass', notes: [
@@ -261,6 +261,12 @@ export default function DAWPage() {
   const [colorPickerTrackId, setColorPickerTrackId] = useState<number | null>(null);
 
   const [editingTrackId, setEditingTrackId] = useState<number | null>(null);
+
+  // Loop bar state
+  const [loopEnabled, setLoopEnabled] = useState(false);
+  const [loopStartBeat, setLoopStartBeat] = useState(0);
+  const [loopEndBeat, setLoopEndBeat] = useState(8);
+  const loopDragRef = useRef<{ mode: 'move' | 'start' | 'end'; startX: number; origStart: number; origEnd: number } | null>(null);
 
   // Audio-to-MIDI conversion modal state
   const [conversionModal, setConversionModal] = useState<{
@@ -1046,6 +1052,58 @@ export default function DAWPage() {
   const selectedTrack = tracks.find(t => t.id === selectedTrackId);
   const showSynthEditor = selectedTrack && selectedTrack.type === 'midi' && selectedTrack.instrument;
 
+  // Loop bar drag handlers
+  const handleLoopDragStart = useCallback((mode: 'move' | 'start' | 'end', e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    loopDragRef.current = { mode, startX: e.clientX, origStart: loopStartBeat, origEnd: loopEndBeat };
+
+    const onMove = (ev: MouseEvent) => {
+      if (!loopDragRef.current) return;
+      const dx = ev.clientX - loopDragRef.current.startX;
+      const dBeats = dx / PIXELS_PER_BEAT;
+
+      if (loopDragRef.current.mode === 'move') {
+        const len = loopDragRef.current.origEnd - loopDragRef.current.origStart;
+        const newStart = Math.max(0, Math.round((loopDragRef.current.origStart + dBeats) * 4) / 4);
+        setLoopStartBeat(newStart);
+        setLoopEndBeat(newStart + len);
+      } else if (loopDragRef.current.mode === 'start') {
+        const newStart = Math.max(0, Math.round((loopDragRef.current.origStart + dBeats) * 4) / 4);
+        if (newStart < loopEndBeat - 1) setLoopStartBeat(newStart);
+      } else if (loopDragRef.current.mode === 'end') {
+        const newEnd = Math.max(loopStartBeat + 1, Math.round((loopDragRef.current.origEnd + dBeats) * 4) / 4);
+        setLoopEndBeat(newEnd);
+      }
+    };
+
+    const onUp = () => {
+      loopDragRef.current = null;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  }, [loopStartBeat, loopEndBeat, PIXELS_PER_BEAT]);
+
+  const handleToggleLoop = useCallback(() => {
+    const next = !loopEnabled;
+    setLoopEnabled(next);
+    if (next) {
+      // Set scheduler loop region
+      const { updateProject, activeProject } = useProjectStore.getState();
+      if (activeProject) {
+        updateProject({ isLooping: true, loopStart: loopStartBeat, loopEnd: loopEndBeat });
+      }
+    } else {
+      const { updateProject, activeProject } = useProjectStore.getState();
+      if (activeProject) {
+        updateProject({ isLooping: false });
+      }
+    }
+  }, [loopEnabled, loopStartBeat, loopEndBeat]);
+
   return (
     <div className="daw-container">
       {/* Add Track Modal */}
@@ -1277,6 +1335,57 @@ export default function DAWPage() {
               <div key={i} className="ruler-mark" style={{ width: PIXELS_PER_BEAT }}><span>{i + 1}</span></div>
             ))}
           </div>
+
+          {/* Loop Bar Region */}
+          <div className="loop-bar-row" style={{
+            position: 'relative', height: 20, background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-color)',
+            display: 'flex', alignItems: 'center'
+          }}>
+            <div style={{ width: 170, display: 'flex', alignItems: 'center', paddingLeft: 8, gap: 6, flexShrink: 0 }}>
+              <button
+                onClick={handleToggleLoop}
+                title={loopEnabled ? 'Disable Loop' : 'Enable Loop'}
+                style={{
+                  background: loopEnabled ? 'rgba(88,101,242,0.25)' : 'transparent',
+                  border: `1px solid ${loopEnabled ? '#5865f2' : 'var(--border-color)'}`,
+                  color: loopEnabled ? '#5865f2' : 'var(--text-secondary)',
+                  borderRadius: 4, padding: '1px 6px', fontSize: 10, cursor: 'pointer', fontWeight: 600
+                }}
+              >⟳ Loop</button>
+            </div>
+            <div style={{ position: 'relative', flex: 1, height: '100%' }}>
+              {loopEnabled && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: loopStartBeat * PIXELS_PER_BEAT,
+                    width: (loopEndBeat - loopStartBeat) * PIXELS_PER_BEAT,
+                    top: 2, bottom: 2,
+                    background: 'rgba(88,101,242,0.25)',
+                    border: '1px solid rgba(88,101,242,0.5)',
+                    borderRadius: 4,
+                    cursor: 'grab',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 9, color: '#7b83eb', fontWeight: 600, userSelect: 'none'
+                  }}
+                  onMouseDown={(e) => handleLoopDragStart('move', e)}
+                >
+                  {/* Left resize handle */}
+                  <div
+                    style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 6, cursor: 'ew-resize', borderRadius: '4px 0 0 4px' }}
+                    onMouseDown={(e) => { e.stopPropagation(); handleLoopDragStart('start', e); }}
+                  />
+                  {/* Right resize handle */}
+                  <div
+                    style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 6, cursor: 'ew-resize', borderRadius: '0 4px 4px 0' }}
+                    onMouseDown={(e) => { e.stopPropagation(); handleLoopDragStart('end', e); }}
+                  />
+                  {loopStartBeat.toFixed(0)}–{loopEndBeat.toFixed(0)}
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="track-lanes">
             {/* Grid lines overlay */}
             <div className="grid-lines" style={{ left: '170px' }}>
@@ -1432,7 +1541,13 @@ export default function DAWPage() {
         {/* Synth Editor Panel (sidebar) */}
         {showSynthEditor && (
           <aside style={{ width: 360, padding: 12 }}>
-            <SynthEditorPanel presetName={selectedTrack?.instrument ?? ''} />
+            <SynthEditorPanel presetName={selectedTrack?.instrument ?? ''} onPresetChange={(p) => {
+              if (selectedTrackId != null) {
+                setTracks(prev => prev.map(t =>
+                  t.id === selectedTrackId ? { ...t, instrument: p.name } : t
+                ));
+              }
+            }} />
           </aside>
         )}
 
@@ -1567,7 +1682,7 @@ export default function DAWPage() {
           cursor: pointer;
           border-radius: 4px;
         }
-        .context-menu button:hover { background: rgba(88, 101, 242, 0.2); color: white; }
+        .context-menu button:hover { background: rgba(213, 178, 97, 0.2); color: white; }
         .context-menu button.danger { color: #ed4245; }
         .context-menu button.danger:hover { background: rgba(237, 66, 69, 0.2); }
         .context-menu-divider { height: 1px; background: #2a2a3a; margin: 4px 0; }
@@ -1595,10 +1710,10 @@ export default function DAWPage() {
         .color-swatch:hover { transform: scale(1.15); border-color: white; }
 
         /* Drag states */
-        .track-lane.dragging { opacity: 0.5; background: rgba(88, 101, 242, 0.1); }
+        .track-lane.dragging { opacity: 0.5; background: rgba(213, 178, 97, 0.1); }
         .track-lane.drop-target { 
-          border-top: 2px solid #5865f2; 
-          background: rgba(88, 101, 242, 0.08);
+          border-top: 2px solid #d5b261; 
+          background: rgba(213, 178, 97, 0.08);
         }
 
         /* Rename modal */
@@ -1614,7 +1729,7 @@ export default function DAWPage() {
           outline: none;
           margin-bottom: 12px;
         }
-        .rename-input:focus { border-color: #5865f2; }
+        .rename-input:focus { border-color: #d5b261; }
         .modal-actions {
           display: flex;
           gap: 8px;
@@ -1632,7 +1747,7 @@ export default function DAWPage() {
         .btn-secondary:hover { background: #3a3a4a; color: white; }
         .btn-primary {
           padding: 8px 16px;
-          background: #5865f2;
+          background: #d5b261;
           border: none;
           border-radius: 6px;
           color: white;
@@ -1640,7 +1755,7 @@ export default function DAWPage() {
           font-size: 0.8rem;
           font-weight: 600;
         }
-        .btn-primary:hover { background: #4752c4; }
+        .btn-primary:hover { background: #b8943f; }
 
         /* Modal */
         .modal-overlay {
@@ -1701,7 +1816,7 @@ export default function DAWPage() {
         }
         .track-type-btn:hover {
           background: #2a2a3a;
-          border-color: #5865f2;
+          border-color: #d5b261;
         }
         .track-type-btn span {
           font-weight: 600;
@@ -1724,11 +1839,11 @@ export default function DAWPage() {
         }
         .toolbar-left { display: flex; align-items: center; gap: 1rem; }
         .logo { display: flex; align-items: center; gap: 0.5rem; }
-        .logo-icon { color: #5865f2; }
+        .logo-icon { color: #d5b261; }
         .logo-text {
           font-weight: 800;
           font-size: 1.2rem;
-          background: linear-gradient(135deg, #5865f2, #eb459e);
+          background: linear-gradient(135deg, #d5b261, #f3ddb0);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
         }
@@ -1799,7 +1914,7 @@ export default function DAWPage() {
           cursor: pointer;
         }
         .transport-btn:hover { background: var(--border-subtle); color: var(--text-bright); }
-        .transport-btn.play { background: linear-gradient(135deg, #5865f2, #4752c4); color: white; }
+        .transport-btn.play { background: linear-gradient(135deg, #d5b261, #b8943f); color: #0d0b0a; }
         .transport-btn.record:hover { color: #ff4d4d; }
         .time-display, .tempo-display, .signature {
           background: var(--bg-deep);
@@ -1808,8 +1923,8 @@ export default function DAWPage() {
           margin-left: 0.5rem;
           font-size: 0.75rem;
         }
-        .time { color: #5865f2; font-family: monospace; }
-        .tempo-value { color: #eb459e; font-weight: 700; }
+        .time { color: #d5b261; font-family: monospace; }
+        .tempo-value { color: #f3ddb0; font-weight: 700; }
         .tempo-label { color: #444; font-size: 0.5rem; margin-left: 2px; }
         .signature { color: #444; }
         .toolbar-right { display: flex; gap: 0.25rem; }
@@ -1853,7 +1968,7 @@ export default function DAWPage() {
         }
         .sound-count {
           margin-left: auto;
-          background: #5865f2;
+          background: #d5b261;
           color: white;
           padding: 0.1rem 0.4rem;
           border-radius: 8px;
@@ -1892,7 +2007,7 @@ export default function DAWPage() {
           cursor: pointer;
           border-radius: 3px;
         }
-        .sound-item:hover { background: rgba(88, 101, 242, 0.1); color: #5865f2; }
+        .sound-item:hover { background: rgba(213, 178, 97, 0.1); color: #d5b261; }
 
         /* Timeline */
         .timeline-section {
@@ -1937,7 +2052,7 @@ export default function DAWPage() {
             opacity: 0.5;
         }
         .empty-track-area:hover {
-            background: rgba(88, 101, 242, 0.05);
+            background: rgba(213, 178, 97, 0.05);
             opacity: 1;
         }
         .empty-state-content {
@@ -1948,7 +2063,7 @@ export default function DAWPage() {
             color: #444;
         }
         .empty-track-area:hover .empty-state-content {
-            color: #5865f2;
+            color: #d5b261;
         }
         .empty-state-content small {
             font-size: 0.7rem;
@@ -1963,7 +2078,7 @@ export default function DAWPage() {
           transition: background 0.15s;
         }
         .track-lane:hover { background: rgba(255, 255, 255, 0.02); }
-        .track-lane.selected { background: rgba(88, 101, 242, 0.08); }
+        .track-lane.selected { background: rgba(213, 178, 97, 0.08); }
         .track-lane.muted { opacity: 0.4; }
         .track-lane.greyed { opacity: 0.35; filter: saturate(0.3); }
         .track-header {
@@ -2039,7 +2154,7 @@ export default function DAWPage() {
           cursor: pointer;
           box-shadow: 0 1px 3px rgba(0,0,0,0.4);
         }
-        .mini-vol::-webkit-slider-thumb:hover { background: #5865f2; }
+        .mini-vol::-webkit-slider-thumb:hover { background: #d5b261; }
         .track-content { flex: 1; position: relative; }
         .clip {
           position: absolute;
@@ -2100,11 +2215,11 @@ export default function DAWPage() {
         .channel:hover { border-color: #2a2a34; }
         .channel.muted { opacity: 0.4; }
         .channel.soloed { border-color: #fee75c; }
-        .channel.selected { border-color: #5865f2; background: rgba(88, 101, 242, 0.05); }
+        .channel.selected { border-color: #d5b261; background: rgba(213, 178, 97, 0.05); }
         .channel.master {
           width: 72px;
-          background: linear-gradient(180deg, rgba(88, 101, 242, 0.08) 0%, #0a0a10 100%);
-          border-color: rgba(88, 101, 242, 0.3);
+          background: linear-gradient(180deg, rgba(213, 178, 97, 0.08) 0%, #0a0a10 100%);
+          border-color: rgba(213, 178, 97, 0.3);
         }
         .channel-label {
           font-size: 0.5rem;
@@ -2116,7 +2231,7 @@ export default function DAWPage() {
           text-overflow: ellipsis;
           width: 100%;
         }
-        .master-label { color: #5865f2 !important; }
+        .master-label { color: #d5b261 !important; }
         .channel-main { display: flex; gap: 3px; flex: 1; width: 100%; }
         .meter-container { display: flex; gap: 2px; }
         .master-meters { gap: 3px; }
@@ -2136,7 +2251,7 @@ export default function DAWPage() {
           background: linear-gradient(to top, #57f287 0%, #57f287 55%, #fee75c 75%, #ff6b6b 90%, #ff4d4d 100%);
           border-radius: 2px;
         }
-        .master-fill { background: linear-gradient(to top, #5865f2 0%, #5865f2 55%, #eb459e 75%, #ff6b6b 90%, #ff4d4d 100%); }
+        .master-fill { background: linear-gradient(to top, #d5b261 0%, #d5b261 55%, #f3ddb0 75%, #ff6b6b 90%, #ff4d4d 100%); }
         .fader-container { flex: 1; display: flex; justify-content: center; }
         .fader-track {
           width: 6px;
@@ -2153,7 +2268,7 @@ export default function DAWPage() {
           background: linear-gradient(to top, #3a3a4a 0%, #5a5a6a 100%);
           border-radius: 3px;
         }
-        .master-fader-fill { background: linear-gradient(to top, #4752c4 0%, #5865f2 100%); }
+        .master-fader-fill { background: linear-gradient(to top, #b8943f 0%, #d5b261 100%); }
         .fader {
           position: absolute;
           width: 100%;
@@ -2184,7 +2299,7 @@ export default function DAWPage() {
           left: 50%;
           width: 2px;
           height: 7px;
-          background: #5865f2;
+          background: #d5b261;
           transform-origin: bottom center;
           margin-left: -1px;
           margin-top: -7px;

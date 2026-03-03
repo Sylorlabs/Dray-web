@@ -15,7 +15,7 @@
 }
 
 .modal {
-    background: var(--surface, #1e1e2e);
+    background: var(--surface, #1e1a15);
     border-radius: 16px;
     padding: 24px;
     width: 90%;
@@ -40,7 +40,7 @@
 
 .closeButton:hover {
     color: var(--text, #fff);
-    background: var(--surface-hover, #2a2a3e);
+    background: var(--surface-hover, #2a2016);
 }
 
 .title {
@@ -75,13 +75,13 @@
 }
 
 .modeCard:hover:not(:disabled) {
-    background: var(--surface-hover, #2a2a3e);
+    background: var(--surface-hover, #2a2016);
     border-color: var(--border, #444);
 }
 
 .modeCard.selected {
-    border-color: var(--accent, #5865f2);
-    background: rgba(88, 101, 242, 0.15);
+    border-color: var(--accent, #d5b261);
+    background: rgba(213, 178, 97, 0.15);
 }
 
 .modeCard:disabled {
@@ -90,7 +90,7 @@
 }
 
 .modeIcon {
-    color: var(--accent, #5865f2);
+    color: var(--accent, #d5b261);
     margin-bottom: 8px;
 }
 
@@ -120,7 +120,7 @@
 
 .spinner {
     animation: spin 1s linear infinite;
-    color: var(--accent, #5865f2);
+    color: var(--accent, #d5b261);
 }
 
 @keyframes spin {
@@ -148,7 +148,7 @@
 
 .progressFill {
     height: 100%;
-    background: var(--accent, #5865f2);
+    background: var(--accent, #d5b261);
     transition: width 0.3s ease;
 }
 
@@ -170,10 +170,10 @@
     align-items: center;
     gap: 8px;
     padding: 12px 16px;
-    background: rgba(34, 197, 94, 0.15);
-    border: 1px solid rgba(34, 197, 94, 0.3);
+    background: rgba(213, 178, 97, 0.12);
+    border: 1px solid rgba(213, 178, 97, 0.28);
     border-radius: 8px;
-    color: #22c55e;
+    color: #d5b261;
     font-size: 0.9rem;
     margin-bottom: 20px;
 }
@@ -196,25 +196,25 @@
 }
 
 .cancelButton:hover {
-    background: var(--surface-hover, #2a2a3e);
+    background: var(--surface-hover, #2a2016);
 }
 
 .convertButton,
 .applyButton {
-    background: var(--accent, #5865f2);
+    background: linear-gradient(135deg, #d5b261, #b8943f);
     border: none;
-    color: white;
+    color: #0d0b0a;
     padding: 10px 24px;
     border-radius: 8px;
     cursor: pointer;
     font-size: 0.9rem;
-    font-weight: 500;
+    font-weight: 600;
     transition: all 0.2s;
 }
 
 .convertButton:hover:not(:disabled),
 .applyButton:hover {
-    background: var(--accent-hover, #4752c4);
+    background: linear-gradient(135deg, #e8c97a, #d5b261);
 }
 
 .convertButton:disabled {
@@ -223,9 +223,10 @@
 }
 
 .applyButton {
-    background: #22c55e;
+    background: linear-gradient(135deg, #d5b261, #b8943f);
+    color: #0d0b0a;
 }
 
 .applyButton:hover {
-    background: #16a34a;
+    background: linear-gradient(135deg, #e8c97a, #d5b261);
 }

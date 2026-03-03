@@ -13,8 +13,8 @@
 }
 
 .window {
-    background: #0b0b14;
-    border: 1px solid #2a2a3e;
+    background: #0d0b0a;
+    border: 1px solid #2a2016;
     width: 90vw;
     max-width: 900px;
     height: 70vh;
@@ -27,8 +27,8 @@
 
 .header {
     padding: 1rem 1.5rem;
-    background: #14141d;
-    border-bottom: 1px solid #2a2a3e;
+    background: #120f0d;
+    border-bottom: 1px solid #2a2016;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -54,8 +54,8 @@
     align-items: center;
     gap: 2rem;
     padding: 1.5rem;
-    background: #0e0e16;
-    border-bottom: 1px solid #1e1e2d;
+    background: #0f0c0a;
+    border-bottom: 1px solid #1e1a15;
 }
 
 .controlGroup {
@@ -96,7 +96,7 @@
 .mainArea {
     flex: 1;
     position: relative;
-    background: #08080c;
+    background: #090706;
     overflow: hidden;
     display: flex;
     align-items: center;
@@ -119,6 +119,6 @@
 }
 
 .closeBtn:hover {
-    background: #1e1e2d;
+    background: #1e1a15;
     color: #fff;
 }

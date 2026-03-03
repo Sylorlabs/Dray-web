@@ -548,6 +548,48 @@ class ToneSynthEngine {
     }
 
     /**
+     * Apply a live preset parameter change to all cached synths for a preset.
+     * Called from SynthEditorPanel when knobs are turned.
+     */
+    applyPresetUpdate(presetName: string, updates: Record<string, any>) {
+        // Find all cached synths matching this preset name
+        this.trackSynths.forEach((bundle, key) => {
+            if (!key.endsWith(`-${presetName}`)) return;
+            try {
+                const synth = bundle.synth;
+                if (updates.attack !== undefined || updates.decay !== undefined ||
+                    updates.sustain !== undefined || updates.release !== undefined) {
+                    synth.set({
+                        envelope: {
+                            ...(updates.attack !== undefined && { attack: updates.attack }),
+                            ...(updates.decay !== undefined && { decay: updates.decay }),
+                            ...(updates.sustain !== undefined && { sustain: updates.sustain }),
+                            ...(updates.release !== undefined && { release: updates.release }),
+                        }
+                    });
+                }
+                if (updates.filterFreq !== undefined) {
+                    // Try to update filter in the effects chain
+                    bundle.effects?.forEach((ef: any) => {
+                        if (ef?.frequency?.value !== undefined && ef.type !== undefined) {
+                            ef.frequency.value = updates.filterFreq;
+                        }
+                    });
+                }
+                if (updates.filterQ !== undefined) {
+                    bundle.effects?.forEach((ef: any) => {
+                        if (ef?.Q?.value !== undefined) {
+                            ef.Q.value = updates.filterQ;
+                        }
+                    });
+                }
+            } catch (e) {
+                console.error('Failed to apply preset update to cached synth:', e);
+            }
+        });
+    }
+
+    /**
      * Play a note - SYNCHRONOUS for cached synths to avoid timing jitter (Issue #14)
      * Only falls back to async if synth needs to be created
      */
@@ -558,29 +600,37 @@ class ToneSynthEngine {
         if (this.trackSynths.has(key) && this.initialized) {
             try {
                 const bundle = this.trackSynths.get(key);
-                // Convert MIDI number to note name - Tone.js interprets raw numbers as Hz, not MIDI
                 const n = typeof note === 'number'
                     ? this._midiToNote(note)
                     : note;
-                bundle.synth.triggerAttackRelease(n, duration, time, velocity);
-            } catch (e) {
-                console.error("Error playing synth note:", e);
+                // Ensure time is strictly in the future
+                const now = audioEngine.getNow();
+                const safeTime = (time !== undefined)
+                    ? Math.max(time, now + 0.005)
+                    : time;
+                bundle.synth.triggerAttackRelease(n, duration, safeTime, velocity);
+            } catch (e: any) {
+                if (e?.message?.includes('Start time')) {
+                    // Silently absorb timing assertion - note is too close to previous
+                } else {
+                    console.error("Error playing synth note:", e);
+                }
             }
             return;
         }
 
         // Slow path: create synth async, then schedule note slightly later
-        // This is only hit on first use of a preset
         this.getSynth(trackId, preset).then(bundle => {
             try {
                 const n = typeof note === 'number'
                     ? this._midiToNote(note)
                     : note;
-                // Add small delay to account for async creation time
                 const adjustedTime = time !== undefined ? time + 0.05 : undefined;
                 bundle.synth.triggerAttackRelease(n, duration, adjustedTime, velocity);
-            } catch (e) {
-                console.error("Error playing synth note (async):", e);
+            } catch (e: any) {
+                if (!e?.message?.includes('Start time')) {
+                    console.error("Error playing synth note (async):", e);
+                }
             }
         }).catch(e => console.error("Error getting synth:", e));
     }

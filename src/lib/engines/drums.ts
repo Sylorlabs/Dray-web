@@ -159,7 +159,15 @@ class ToneDrumMachine {
     }
 
     setKit(kit: string) {
-        if (DRUM_KITS[kit]) {
+        // Handle naming variations: "808 Kit" → "808", "Trap Kit" → "Trap", etc.
+        const normalized = kit.replace(/ Kit$/i, '').replace(/^Boom Bap$/i, 'Boom Bap')
+            .replace(/^Acoustic Kit$/i, 'Acoustic').replace(/^Jazz Brushes$/i, 'Acoustic')
+            .replace(/^Rock Kit$/i, 'Acoustic').replace(/^Lo-Fi Kit$/i, 'Lo-Fi')
+            .replace(/^Vinyl Drums$/i, 'Lo-Fi').replace(/^Phonk Kit$/i, 'Phonk')
+            .replace(/^EDM Kit$/i, 'EDM');
+        if (DRUM_KITS[normalized]) {
+            this.currentKit = normalized;
+        } else if (DRUM_KITS[kit]) {
             this.currentKit = kit;
         } else {
             this.currentKit = '808';
@@ -276,9 +284,12 @@ class ToneDrumMachine {
         const kit = this.currentKit;
         const bundle = await this.getDrumBundle(trackId, kit);
         const ToneLib = this.ToneLib!;
-        const t = time ?? ToneLib.now();
+        const now = ToneLib.now();
+        // Ensure time is strictly in the future to prevent MonoSynth/MembraneSynth assertion
+        const t = Math.max((time ?? now), now + 0.005);
         const params = DRUM_KITS[kit] || DRUM_KITS['808'];
 
+        try {
         // --- KICK ---
         if (drumType === 'kick') {
             const p = params.kick;
@@ -292,7 +303,7 @@ class ToneDrumMachine {
         }
 
         // --- SNARE ---
-        else if (drumType === 'snare') {
+        else if (drumType === 'snare' || drumType === 'rimshot') {
             const p = params.snare;
             bundle.snare.body.pitchDecay = 0.05;
             bundle.snare.body.envelope.decay = p.decay;
@@ -300,14 +311,12 @@ class ToneDrumMachine {
             bundle.snare.noise.noise.type = p.noiseType;
             bundle.snare.noise.envelope.decay = p.noiseDecay;
 
-            // Can't set highpass directly on Filter object in some Tone versions without rampTo, 
-            // but setting .value on frequency should work
             if (typeof bundle.snare.filter.frequency.value !== 'undefined') {
-                bundle.snare.filter.frequency.value = parseFloat(p.frequency) > 200 ? 3000 : 2000; // Simplified
+                bundle.snare.filter.frequency.value = parseFloat(p.frequency) > 200 ? 3000 : 2000;
             }
 
-            bundle.snare.bodyGain.gain.value = p.toneRatio;
-            bundle.snare.noiseGain.gain.value = 1 - p.toneRatio;
+            bundle.snare.bodyGain.gain.value = drumType === 'rimshot' ? 0.8 : p.toneRatio;
+            bundle.snare.noiseGain.gain.value = drumType === 'rimshot' ? 0.2 : (1 - p.toneRatio);
 
             bundle.snare.body.triggerAttackRelease(p.frequency, '16n', t, velocity);
             bundle.snare.noise.triggerAttackRelease('16n', t, velocity);
@@ -317,14 +326,12 @@ class ToneDrumMachine {
         else if (drumType === 'hihat-closed' || drumType === 'hihat-open') {
             const p = params.hihat;
             const isOpen = drumType === 'hihat-open';
-            // MetalSynth params
             bundle.hihat.synth.frequency.value = p.frequency;
             bundle.hihat.synth.harmonicity = p.harmonicity;
             bundle.hihat.synth.resonance = p.resonance;
-            bundle.hihat.synth.envelope.decay = isOpen ? 0.3 : p.decay; // Open hat longer
+            bundle.hihat.synth.envelope.decay = isOpen ? 0.3 : p.decay;
             bundle.hihat.synth.envelope.release = isOpen ? 0.3 : p.decay;
 
-            // Trigger with different durations
             bundle.hihat.synth.triggerAttackRelease(isOpen ? '8n' : '32n', t, velocity);
         }
 
@@ -335,16 +342,12 @@ class ToneDrumMachine {
             bundle.clap.filter.frequency.value = p.filterFreq;
             bundle.clap.noise.envelope.decay = p.decay;
 
-            // Simulate multiple claps? Harder with single synth instance without retriggering fast
-            // Just single trigger for now for performance, or use Tone.Part for micro-delays
-            // To prevent glitching, we just do one fat clap
             bundle.clap.noise.triggerAttackRelease('16n', t, velocity);
 
-            // If we really want the "multi-clap" effect, we can schedule future hits
             if (p.count > 1) {
-                const spacing = 0.01; // 10ms
+                const spacing = 0.01;
                 for (let i = 1; i < p.count; i++) {
-                    bundle.clap.noise.triggerAttackRelease('16n', t + (i * spacing), velocity * 0.7);
+                    try { bundle.clap.noise.triggerAttackRelease('16n', t + (i * spacing), velocity * 0.7); } catch { /* timing overlap */ }
                 }
             }
         }
@@ -357,9 +360,6 @@ class ToneDrumMachine {
             if (drumType === 'tom-mid') note = p.baseFreq * 1.5;
             if (drumType === 'tom-high') note = p.baseFreq * 2;
 
-            // PolySynth handles multiple toms fine
-            // We set attributes on the PolySynth prototype essentially? No, PolySynth shares settings.
-            // We'll just assume average settings for the kit
             bundle.tom.synth.set({
                 pitchDecay: p.pitchDecay,
                 octaves: p.octaves
@@ -378,6 +378,13 @@ class ToneDrumMachine {
         // --- COWBELL ---
         else if (drumType === 'cowbell') {
             bundle.cowbell.synth.triggerAttackRelease('16n', t, velocity);
+        }
+
+        } catch (e: any) {
+            // Absorb timing assertions from MonoSynth/MembraneSynth to prevent playback crash
+            if (!e?.message?.includes('Start time')) {
+                console.error('Drum playNote error:', e);
+            }
         }
     }
 

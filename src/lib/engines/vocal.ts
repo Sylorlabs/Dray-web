@@ -450,7 +450,13 @@ class ToneVocalEngine implements VocalEngineInterface {
         const bundle = await this.getSynth(trackId, type);
         const ToneLib = await ensureTone() as ToneLibType;
         const n = (ToneLib as any).Frequency(note, 'midi').toNote();
-        bundle.synth.triggerAttackRelease?.(n, '4n', time ?? (ToneLib as any).now());
+        const now = (ToneLib as any).now();
+        const t = Math.max((time ?? now), now + 0.005);
+        try {
+            bundle.synth.triggerAttackRelease?.(n, '4n', t);
+        } catch (e: any) {
+            if (!e?.message?.includes('Start time')) console.error('Vocal playVocal error:', e);
+        }
     }
 
     async playNote(trackId: number, note: number | string, duration: string | number, velocity: number, preset: string, time?: number) {
@@ -458,7 +464,13 @@ class ToneVocalEngine implements VocalEngineInterface {
         const bundle = await this.getSynth(trackId, preset);
         const ToneLib = await ensureTone() as ToneLibType;
         const n = typeof note === 'number' ? (ToneLib as any).Frequency(note, 'midi').toNote() : note;
-        bundle.synth.triggerAttackRelease?.(n, duration, time ?? (ToneLib as any).now(), velocity);
+        const now = (ToneLib as any).now();
+        const t = Math.max((time ?? now), now + 0.005);
+        try {
+            bundle.synth.triggerAttackRelease?.(n, duration, t, velocity);
+        } catch (e: any) {
+            if (!e?.message?.includes('Start time')) console.error('Vocal playNote error:', e);
+        }
     }
 
     /**

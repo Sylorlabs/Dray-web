@@ -479,7 +479,13 @@ class ToneKeysEngine implements KeysEngineInterface {
         const bundle = await this.getSynth(trackId, preset);
         const ToneLib = await ensureTone() as ToneLibType;
         const n = typeof note === 'number' ? (ToneLib as any).Frequency(note, 'midi').toNote() : note;
-        bundle.synth.triggerAttackRelease?.(n, duration, time ?? (ToneLib as any).now(), velocity);
+        const now = (ToneLib as any).now();
+        const t = Math.max((time ?? now), now + 0.005);
+        try {
+            bundle.synth.triggerAttackRelease?.(n, duration, t, velocity);
+        } catch (e: any) {
+            if (!e?.message?.includes('Start time')) console.error('Keys playNote error:', e);
+        }
     }
 
     /**

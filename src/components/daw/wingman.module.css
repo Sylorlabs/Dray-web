@@ -53,7 +53,7 @@
 }
 
 .icon {
-    color: #5865f2;
+    color: #d5b261;
 }
 
 .brainToggle {
@@ -63,7 +63,7 @@
     border-radius: 4px;
     padding: 4px 6px;
     cursor: pointer;
-    color: #7171a1;
+    color: #9a8f7e;
     transition: all 0.2s;
 }
 
@@ -73,7 +73,7 @@
 }
 
 .brainToggle.active {
-    background: #5865f2;
+    background: #d5b261;
     color: white;
 }
 
@@ -106,15 +106,16 @@
 }
 
 .user p {
-    background: #5865f2;
-    color: white;
+    background: linear-gradient(135deg, #d5b261, #b8943f);
+    color: #0d0b0a;
     padding: 0.5rem 0.75rem;
     border-radius: 12px 12px 4px 12px;
     max-width: 85%;
+    font-weight: 600;
 }
 
 .avatar {
-    color: #5865f2;
+    color: #d5b261;
     flex-shrink: 0;
     margin-top: 2px;
 }
@@ -156,8 +157,8 @@
 }
 
 .chip:hover {
-    background: rgba(88, 101, 242, 0.1);
-    border-color: #5865f2;
+    background: rgba(213, 178, 97, 0.1);
+    border-color: #d5b261;
     color: white;
 }
 
@@ -184,7 +185,7 @@
 }
 
 .inputArea input:focus {
-    border-color: #5865f2;
+    border-color: #d5b261;
 }
 
 .inputArea input:disabled {
@@ -192,7 +193,7 @@
 }
 
 .sendBtn {
-    background: #5865f2;
+    background: #d5b261;
     border: none;
     border-radius: 8px;
     padding: 0.5rem;
@@ -205,7 +206,7 @@
 }
 
 .sendBtn:hover {
-    background: #4752c4;
+    background: #b8943f;
 }
 
 .sendBtn:disabled {
