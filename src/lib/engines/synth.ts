@@ -558,7 +558,11 @@ class ToneSynthEngine {
         if (this.trackSynths.has(key) && this.initialized) {
             try {
                 const bundle = this.trackSynths.get(key);
-                bundle.synth.triggerAttackRelease(note, duration, time, velocity);
+                // Convert MIDI number to note name - Tone.js interprets raw numbers as Hz, not MIDI
+                const n = typeof note === 'number'
+                    ? this._midiToNote(note)
+                    : note;
+                bundle.synth.triggerAttackRelease(n, duration, time, velocity);
             } catch (e) {
                 console.error("Error playing synth note:", e);
             }
@@ -569,9 +573,12 @@ class ToneSynthEngine {
         // This is only hit on first use of a preset
         this.getSynth(trackId, preset).then(bundle => {
             try {
+                const n = typeof note === 'number'
+                    ? this._midiToNote(note)
+                    : note;
                 // Add small delay to account for async creation time
                 const adjustedTime = time !== undefined ? time + 0.05 : undefined;
-                bundle.synth.triggerAttackRelease(note, duration, adjustedTime, velocity);
+                bundle.synth.triggerAttackRelease(n, duration, adjustedTime, velocity);
             } catch (e) {
                 console.error("Error playing synth note (async):", e);
             }
@@ -600,8 +607,11 @@ class ToneSynthEngine {
         const cachedBundle = this.trackSynths.get(key);
         if (cachedBundle) {
             try {
-                cachedBundle.synth.triggerAttackRelease(note, '8n', undefined, velocity);
-                this.lastPreviewNote = { key, note };
+                const n = typeof note === 'number'
+                    ? this._midiToNote(note)
+                    : note;
+                cachedBundle.synth.triggerAttackRelease(n, '8n', undefined, velocity);
+                this.lastPreviewNote = { key, note: n };
             } catch (e) {
                 console.error("Error in previewNote (cached):", e);
             }
@@ -612,8 +622,11 @@ class ToneSynthEngine {
         // This only happens on the FIRST click for a new preset
         this.getSynth(trackId, preset).then(bundle => {
             try {
-                bundle.synth.triggerAttackRelease(note, '8n', undefined, velocity);
-                this.lastPreviewNote = { key, note };
+                const n = typeof note === 'number'
+                    ? this._midiToNote(note)
+                    : note;
+                bundle.synth.triggerAttackRelease(n, '8n', undefined, velocity);
+                this.lastPreviewNote = { key, note: n };
             } catch (e) {
                 console.error("Error in previewNote (async):", e);
             }
@@ -631,14 +644,28 @@ class ToneSynthEngine {
         const bundle = await this.getSynth(trackId, preset);
 
         try {
-            // Convert MIDI notes to frequencies if they are numbers
-            const freqs = notes.map(n =>
-                typeof n === 'number' ? new (ToneLib.Frequency as any)(n, "midi").toFrequency() : n
+            // Convert MIDI notes to note names for consistent pitch
+            const noteNames = notes.map(n =>
+                typeof n === 'number' ? this._midiToNote(n) : n
             );
-            bundle.synth.triggerAttackRelease(freqs, duration, time, velocity);
+            // MonoSynth only accepts a single note — pass the lowest (root)
+            const isMono = typeof (bundle.synth as any).maxPolyphony === 'undefined';
+            if (isMono) {
+                bundle.synth.triggerAttackRelease(noteNames[0], duration, time, velocity);
+            } else {
+                bundle.synth.triggerAttackRelease(noteNames, duration, time, velocity);
+            }
         } catch (e) {
             console.error("Error playing chord:", e);
         }
+    }
+
+    /** Convert MIDI note number to note name (e.g. 60 → "C4") */
+    private _midiToNote(midi: number): string {
+        const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        const octave = Math.floor(midi / 12) - 1;
+        const note = NOTES[midi % 12];
+        return `${note}${octave}`;
     }
 
     stopAll() {

@@ -3,6 +3,7 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { X, Play, Square, Trash2, Grid3X3 } from 'lucide-react';
 import { audioEngine } from '../../lib/audioEngine';
+import { audioScheduler } from '../../lib/scheduler';
 import {
     toneSynthEngine,
     toneDrumMachine,
@@ -160,45 +161,53 @@ function PianoRollBase({
 
         if (timeSinceLastClick < 300) {
             // --- DOUBLE CLICK DETECTED (Stop/Reset) ---
-            lastClickTimeRef.current = 0; // Prevent triple click triggering this again immediately
+            lastClickTimeRef.current = 0;
 
             await audioEngine.initialize();
+            audioScheduler.clearScopedMode();
             setCurrentTime(0);
-            // Ensure play state is OFF
             if (isPlaying) storeTogglePlay();
         } else {
-            // --- SINGLE CLICK (Toggle Play + Auto Loop) ---
+            // --- SINGLE CLICK (Toggle Scoped Clip Playback) ---
             lastClickTimeRef.current = now;
 
-            // Verify engine
             if (!isPlaying) {
                 await audioEngine.initialize();
                 await audioEngine.resume();
 
-                // Smart Auto-Loop Logic
-                // Find end of last note
+                // Calculate loop bounds from notes
                 const lastNoteEnd = notes.reduce((max, note) => Math.max(max, note.start + note.duration), 0);
                 if (lastNoteEnd > 0) {
-                    // Round up to next full bar (4 beats)
                     const beatsPerBar = 4;
                     const loopEnd = Math.ceil(lastNoteEnd / beatsPerBar) * beatsPerBar;
 
-                    // Access store to set loop. 
+                    // Set scoped mode so only this clip's notes play
+                    audioScheduler.setScopedMode(
+                        notes,
+                        trackId,
+                        instrument || 'Grand Piano',
+                        trackType as 'midi' | 'drums' | 'audio',
+                        0,
+                        loopEnd
+                    );
+
                     const { updateProject, activeProject } = useProjectStore.getState();
-                    // Only update if loop is different/not set
                     if (activeProject && (activeProject.loopEnd !== loopEnd || !activeProject.isLooping)) {
                         updateProject({
                             loopEnd: loopEnd,
                             loopStart: 0,
-                            isLooping: true // Auto-enable loop
+                            isLooping: true
                         });
                     }
                 }
+            } else {
+                // Stopping - clear scoped mode
+                audioScheduler.clearScopedMode();
             }
 
             storeTogglePlay();
         }
-    }, [isPlaying, storeTogglePlay, setCurrentTime, notes]);
+    }, [isPlaying, storeTogglePlay, setCurrentTime, notes, trackId, instrument, trackType]);
 
     // Initialize audio engine and scroll position
     useEffect(() => {
@@ -314,7 +323,10 @@ function PianoRollBase({
                             {isPlaying ? <Square size={16} fill="white" /> : <Play size={16} fill="white" />}
                         </button>
 
-                        <button className={styles.closeBtn} onClick={onClose}><X size={20} /></button>
+                        <button className={styles.closeBtn} onClick={() => {
+                            audioScheduler.clearScopedMode();
+                            onClose();
+                        }}><X size={20} /></button>
                     </div>
                 </div>
 

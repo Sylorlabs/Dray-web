@@ -327,6 +327,7 @@ const PianoRollCanvas = forwardRef<PianoRollCanvasHandle, PianoRollCanvasProps>(
             ref={wrapperRef}
             style={{
                 width: width + 'px',
+                minWidth: '100%',
                 height: height + 'px',
                 position: 'relative',
                 userSelect: 'none',

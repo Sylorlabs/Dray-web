@@ -215,16 +215,18 @@ export class AudioScheduler {
             if (this.scopedNotes !== null) {
                 // Loop scoped playback
                 this.current16thNote = this.scopedLoopStart * 4;
-                // We must clear scheduled notes so they can play again
                 this.scheduledNotes.clear();
+                // Reset startTime to keep timing accurate on loop
+                const secondsPerBeat = 60.0 / (this.tempoCache || 120);
+                const secondsPer16th = 0.25 * secondsPerBeat;
+                this.startTime = audioEngine.getNow() - (this.current16thNote * secondsPer16th);
+                this.nextNoteTime = audioEngine.getNow();
             } else {
-                // Main loop - infinite scroll or loop back?
-                // Current behavior was: reset to 0
                 this.current16thNote = 0;
                 this.scheduledNotes.clear();
-                // Note: we should probably reset startTime here to keep numbers sane?
-                // But nextNoteTime must remain linear for AudioContext.
-                // So we just wrap the index.
+                // Reset startTime to prevent timing drift on loop
+                this.startTime = audioEngine.getNow();
+                this.nextNoteTime = audioEngine.getNow();
             }
         }
     }
@@ -524,7 +526,7 @@ export class AudioScheduler {
             }
         }
 
-        if (this.scheduledNotes.size > 20000) this.scheduledNotes.clear();
+        if (this.scheduledNotes.size > 5000) this.scheduledNotes.clear();
     }
 
     /**

@@ -172,6 +172,15 @@
     background: #4752c4;
 }
 
+.btnDanger {
+    background: #ed4245;
+    color: white;
+}
+
+.btnDanger:hover {
+    background: #c03537;
+}
+
 .meterContainer {
     width: 100%;
     height: 8px;

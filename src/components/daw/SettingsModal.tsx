@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { X, Speaker, Mic, Keyboard, Monitor, User, Volume2, CheckCircle2, AlertTriangle, Activity } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Speaker, Mic, Keyboard, Monitor, Volume2, Activity } from 'lucide-react';
 import { audioEngine } from '../../lib/audioEngine';
+import { useTheme } from '../ThemeProvider';
 import styles from './SettingsModal.module.css';
 
 interface SettingsModalProps {
@@ -10,17 +11,27 @@ interface SettingsModalProps {
     onClose: () => void;
 }
 
-type Tab = 'audio' | 'midi' | 'interface' | 'account';
+type Tab = 'audio' | 'midi' | 'interface';
 
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     const [activeTab, setActiveTab] = useState<Tab>('audio');
     const [outputs, setOutputs] = useState<MediaDeviceInfo[]>([]);
     const [inputs, setInputs] = useState<MediaDeviceInfo[]>([]);
     const [selectedOutput, setSelectedOutput] = useState<string>('default');
+    const [selectedInput, setSelectedInput] = useState<string>('default');
     const [audioState, setAudioState] = useState<string>('suspended');
     const [latencyHint, setLatencyHint] = useState<'interactive' | 'balanced' | 'playback'>('playback');
     const [lookAhead, setLookAhead] = useState(0.1);
     const [meterLevel, setMeterLevel] = useState(0);
+
+    // Mic test state
+    const [micTesting, setMicTesting] = useState(false);
+    const [micLevel, setMicLevel] = useState(0);
+    const micStreamRef = useRef<MediaStream | null>(null);
+    const micAnalyserRef = useRef<AnalyserNode | null>(null);
+    const micRafRef = useRef<number>(0);
+
+    const { theme, toggleTheme } = useTheme();
 
     // Monitor audio levels for the meter
     useEffect(() => {
@@ -29,7 +40,6 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             if (!isOpen) return;
 
             try {
-                // Show visual activity feedback based on audio state
                 if (audioEngine.getState() === 'running') {
                     const time = Date.now() / 100;
                     setMeterLevel(Math.abs(Math.sin(time)) * 80);
@@ -58,6 +68,11 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         };
     }, [isOpen]);
 
+    // Cleanup mic test on close
+    useEffect(() => {
+        if (!isOpen) stopMicTest();
+    }, [isOpen]);
+
     const loadDevices = async () => {
         try {
             const devices = await audioEngine.getAudioDevices();
@@ -81,6 +96,52 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         setLatencyHint(hint);
         setLookAhead(look);
         audioEngine.updatePerformanceSettings(hint, look);
+    };
+
+    const startMicTest = async () => {
+        try {
+            const constraints: MediaStreamConstraints = {
+                audio: selectedInput !== 'default'
+                    ? { deviceId: { exact: selectedInput } }
+                    : true
+            };
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            micStreamRef.current = stream;
+
+            const ctx = new AudioContext();
+            const source = ctx.createMediaStreamSource(stream);
+            const analyser = ctx.createAnalyser();
+            analyser.fftSize = 256;
+            source.connect(analyser);
+            micAnalyserRef.current = analyser;
+
+            setMicTesting(true);
+
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            const updateLevel = () => {
+                analyser.getByteFrequencyData(dataArray);
+                let sum = 0;
+                for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+                const avg = sum / dataArray.length;
+                setMicLevel((avg / 255) * 100);
+                micRafRef.current = requestAnimationFrame(updateLevel);
+            };
+            updateLevel();
+
+            // Refresh devices to get labels after permission
+            loadDevices();
+        } catch (e) {
+            console.error('Mic test failed:', e);
+        }
+    };
+
+    const stopMicTest = () => {
+        cancelAnimationFrame(micRafRef.current);
+        micStreamRef.current?.getTracks().forEach(t => t.stop());
+        micStreamRef.current = null;
+        micAnalyserRef.current = null;
+        setMicTesting(false);
+        setMicLevel(0);
     };
 
     if (!isOpen) return null;
@@ -111,12 +172,6 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         onClick={() => setActiveTab('interface')}
                     >
                         <Monitor size={18} /> Interface
-                    </button>
-                    <button
-                        className={`${styles.navItem} ${activeTab === 'account' ? styles.active : ''}`}
-                        onClick={() => setActiveTab('account')}
-                    >
-                        <User size={18} /> Account
                     </button>
                 </div>
 
@@ -189,7 +244,11 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                         <span className={styles.labelText}>Microphone</span>
                                         <span className={styles.description}>Select input for recording audio</span>
                                     </div>
-                                    <select className={styles.select}>
+                                    <select
+                                        className={styles.select}
+                                        value={selectedInput}
+                                        onChange={(e) => setSelectedInput(e.target.value)}
+                                    >
                                         <option value="default">Default System Input</option>
                                         {inputs.map(device => (
                                             <option key={device.deviceId} value={device.deviceId}>
@@ -198,6 +257,28 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                         ))}
                                     </select>
                                 </div>
+                                <div className={styles.row} style={{ marginTop: 12 }}>
+                                    <div className={styles.label}>
+                                        <span className={styles.labelText}>Test Microphone</span>
+                                        <span className={styles.description}>
+                                            {micTesting ? 'Listening... speak or make noise' : 'Check if your mic is picking up audio'}
+                                        </span>
+                                    </div>
+                                    <button
+                                        className={`${styles.btn} ${micTesting ? styles.btnDanger : styles.btnPrimary}`}
+                                        onClick={micTesting ? stopMicTest : startMicTest}
+                                    >
+                                        {micTesting ? 'Stop Test' : 'Test Input'}
+                                    </button>
+                                </div>
+                                {micTesting && (
+                                    <div className={styles.meterContainer} style={{ marginTop: 8 }}>
+                                        <div
+                                            className={styles.meterBar}
+                                            style={{ width: `${micLevel}%`, background: micLevel > 70 ? 'linear-gradient(to right, #57f287, #fee75c, #ed4245)' : 'linear-gradient(to right, #5865f2, #57f287)' }}
+                                        />
+                                    </div>
+                                )}
                             </div>
 
                             <div className={styles.settingGroup}>
@@ -248,10 +329,13 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                         <span className={styles.labelText}>Color Theme</span>
                                         <span className={styles.description}>Choose your vibe</span>
                                     </div>
-                                    <select className={styles.select}>
-                                        <option>Drey Dark (Default)</option>
-                                        <option>Cyber Blue</option>
-                                        <option>Midnight Purple</option>
+                                    <select
+                                        className={styles.select}
+                                        value={theme}
+                                        onChange={() => toggleTheme()}
+                                    >
+                                        <option value="dark">Dray Dark</option>
+                                        <option value="light">Dray Light</option>
                                     </select>
                                 </div>
                             </div>
