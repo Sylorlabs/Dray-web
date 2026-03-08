@@ -1,8 +1,8 @@
 .overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -13,10 +13,13 @@
 .modal {
     width: 800px;
     height: 600px;
-    background: #120e0c;
-    border-radius: 12px;
-    border: 1px solid #2a2016;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    background:
+        var(--kintsugi-panel),
+        radial-gradient(120% 140% at 12% -10%, rgba(243, 221, 176, 0.14), transparent 60%),
+        repeating-linear-gradient(120deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 160px);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--kintsugi-border);
+    box-shadow: var(--kintsugi-shadow-soft), var(--kintsugi-shadow-gold);
     display: flex;
     overflow: hidden;
     animation: scaleIn 0.2s ease-out;
@@ -24,8 +27,10 @@
 
 .sidebar {
     width: 220px;
-    background: #0a0807;
-    border-right: 1px solid #1c1711;
+    background:
+        linear-gradient(180deg, rgba(10, 8, 7, 0.98) 0%, rgba(8, 6, 5, 0.97) 100%),
+        radial-gradient(200px 400px at 0% 50%, rgba(213, 178, 97, 0.05), transparent 70%);
+    border-right: 1px solid var(--kintsugi-border);
     padding: 20px 0;
     display: flex;
     flex-direction: column;
@@ -33,17 +38,18 @@
 
 .header {
     padding: 0 20px 20px;
-    border-bottom: 1px solid #1c1711;
+    border-bottom: 1px solid var(--kintsugi-border);
     margin-bottom: 10px;
 }
 
 .header h2 {
-    color: white;
+    color: var(--text-bright);
     margin: 0;
     font-size: 1.2rem;
     display: flex;
     align-items: center;
     gap: 10px;
+    font-family: var(--font-display, 'Cinzel Decorative'), serif;
 }
 
 .navItem {
@@ -51,25 +57,25 @@
     padding: 12px 20px;
     background: none;
     border: none;
-    color: #888;
+    color: var(--text-dim);
     text-align: left;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 12px;
     font-size: 0.95rem;
-    transition: all 0.2s;
+    transition: all 0.18s var(--kintsugi-ease);
 }
 
 .navItem:hover {
-    background: #1c1711;
-    color: white;
+    background: rgba(213, 178, 97, 0.07);
+    color: var(--text-bright);
 }
 
 .navItem.active {
-    background: rgba(213, 178, 97, 0.1);
-    color: #d5b261;
-    border-right: 3px solid #d5b261;
+    background: rgba(213, 178, 97, 0.12);
+    color: var(--kintsugi-gold);
+    border-right: 3px solid var(--kintsugi-gold);
 }
 
 .content {
@@ -83,23 +89,26 @@
 }
 
 .sectionTitle {
-    color: white;
+    color: var(--text-bright);
     font-size: 1.5rem;
     margin: 0 0 24px 0;
     padding-bottom: 16px;
-    border-bottom: 1px solid #2a2016;
+    border-bottom: 1px solid var(--kintsugi-border);
+    font-family: var(--font-display, 'Cinzel Decorative'), serif;
 }
 
 .settingGroup {
     margin-bottom: 30px;
-    background: #1c1711;
-    border-radius: 8px;
+    background:
+        linear-gradient(145deg, rgba(28, 23, 17, 0.9), rgba(18, 14, 11, 0.9)),
+        radial-gradient(120% 140% at 12% -10%, rgba(213, 178, 97, 0.08), transparent 60%);
+    border-radius: 12px;
     padding: 20px;
-    border: 1px solid #2a2016;
+    border: 1px solid var(--kintsugi-border);
 }
 
 .settingGroup h3 {
-    color: #ccc;
+    color: var(--kintsugi-gold-light);
     font-size: 1rem;
     margin: 0 0 16px 0;
     display: flex;
@@ -125,56 +134,63 @@
 }
 
 .labelText {
-    color: #eee;
+    color: var(--text-bright);
     font-weight: 500;
 }
 
 .description {
-    color: #666;
+    color: var(--text-dim);
     font-size: 0.8rem;
 }
 
 .select {
-    background: #0a0807;
-    border: 1px solid #333;
-    color: white;
+    background: rgba(8, 6, 5, 0.9);
+    border: 1px solid var(--kintsugi-border-strong);
+    color: var(--text-bright);
     padding: 8px 12px;
-    border-radius: 6px;
+    border-radius: 8px;
     min-width: 200px;
     outline: none;
+    transition: border-color 0.18s var(--kintsugi-ease);
 }
 
 .select:focus {
-    border-color: #d5b261;
+    border-color: var(--kintsugi-gold);
+    box-shadow: 0 0 0 3px rgba(213, 178, 97, 0.15);
 }
 
 .btn {
-    background: #2a2016;
-    color: white;
-    border: none;
+    background: rgba(213, 178, 97, 0.08);
+    color: var(--text-bright);
+    border: 1px solid var(--kintsugi-border);
     padding: 8px 16px;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
     font-size: 0.9rem;
-    transition: all 0.2s;
+    transition: all 0.18s var(--kintsugi-ease);
 }
 
 .btn:hover {
-    background: #3a3a4a;
+    background: rgba(213, 178, 97, 0.14);
+    border-color: var(--kintsugi-border-strong);
 }
 
 .btnPrimary {
-    background: #d5b261;
-    color: white;
+    background: linear-gradient(135deg, var(--kintsugi-gold-light), var(--kintsugi-gold), var(--kintsugi-gold-dark));
+    color: var(--bg-deep);
+    border: none;
+    box-shadow: 0 4px 16px rgba(213, 178, 97, 0.3);
 }
 
 .btnPrimary:hover {
-    background: #b8943f;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(213, 178, 97, 0.45);
 }
 
 .btnDanger {
     background: #ed4245;
     color: white;
+    border: none;
 }
 
 .btnDanger:hover {
@@ -184,37 +200,27 @@
 .meterContainer {
     width: 100%;
     height: 8px;
-    background: #0a0807;
+    background: rgba(8, 6, 5, 0.8);
     border-radius: 4px;
     margin-top: 12px;
     overflow: hidden;
+    border: 1px solid var(--kintsugi-border);
 }
 
 .meterBar {
     height: 100%;
-    background: linear-gradient(to right, #7a5a25, #d5b261, #f3ddb0);
+    background: linear-gradient(to right, var(--kintsugi-gold-dark), var(--kintsugi-gold), var(--kintsugi-gold-light));
     width: 0%;
     transition: width 0.1s linear;
+    box-shadow: 0 0 8px rgba(213, 178, 97, 0.4);
 }
 
 @keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-
-    to {
-        opacity: 1;
-    }
+    from { opacity: 0; }
+    to   { opacity: 1; }
 }
 
 @keyframes scaleIn {
-    from {
-        transform: scale(0.95);
-        opacity: 0;
-    }
-
-    to {
-        transform: scale(1);
-        opacity: 1;
-    }
+    from { transform: scale(0.96); opacity: 0; }
+    to   { transform: scale(1);    opacity: 1; }
 }

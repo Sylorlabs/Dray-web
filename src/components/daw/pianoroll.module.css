@@ -1,5 +1,5 @@
 /* PianoRoll Styles - Drey DAW */
-/* Extracted from inline styles for better performance */
+/* Kintsugi theme integrated */
 
 /* ============================================ */
 /* OVERLAY & WINDOW */
@@ -11,22 +11,25 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.85);
+    background: rgba(0, 0, 0, 0.88);
     outline: none;
     user-select: none;
     -webkit-user-select: none;
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(8px);
 }
 
 .prWindow {
     width: 95vw;
     height: 85vh;
-    background: #0f0c0a;
-    border: 1px solid #1e1a15;
-    border-radius: 12px;
+    background:
+        var(--kintsugi-panel),
+        radial-gradient(120% 140% at 12% -10%, rgba(243, 221, 176, 0.1), transparent 60%),
+        repeating-linear-gradient(120deg, rgba(255, 255, 255, 0.02) 0 1px, transparent 1px 160px);
+    border: 1px solid var(--kintsugi-border);
+    border-radius: var(--radius-xl);
     display: flex;
     flex-direction: column;
-    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.8);
+    box-shadow: var(--kintsugi-shadow-soft), var(--kintsugi-shadow-gold);
     overflow: hidden;
     transform: translateZ(0);
 }
@@ -40,8 +43,10 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border-bottom: 1px solid #1e1a15;
-    background: #110e0c;
+    border-bottom: 1px solid var(--kintsugi-border);
+    background:
+        linear-gradient(180deg, rgba(20, 16, 12, 0.98) 0%, rgba(14, 12, 10, 0.95) 100%),
+        radial-gradient(600px 60px at 50% 0%, rgba(213, 178, 97, 0.08), transparent 70%);
 }
 
 .trackInfo {
@@ -54,6 +59,7 @@
     width: 12px;
     height: 12px;
     border-radius: 50%;
+    box-shadow: 0 0 8px currentColor;
 }
 
 .trackText {
@@ -64,19 +70,19 @@
 .trackName {
     font-size: 14px;
     font-weight: bold;
-    color: white;
+    color: var(--text-bright);
 }
 
 .trackInst {
     font-size: 11px;
-    color: #9a8f7e;
+    color: var(--text-dim);
 }
 
 .drumTag {
     font-size: 9px;
     padding: 2px 6px;
     background: rgba(213, 178, 97, 0.18);
-    color: #d5b261;
+    color: var(--kintsugi-gold);
     border: 1px solid rgba(213, 178, 97, 0.3);
     border-radius: 4px;
     font-weight: bold;
@@ -95,9 +101,10 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    background: #1c1711;
+    background: rgba(213, 178, 97, 0.06);
     padding: 4px;
     border-radius: 8px;
+    border: 1px solid var(--kintsugi-border);
 }
 
 .toolBtn {
@@ -107,22 +114,23 @@
     align-items: center;
     gap: 6px;
     font-size: 12px;
-    color: #c5b89a;
+    color: var(--kintsugi-gold-light);
     background: transparent;
     border: none;
     cursor: pointer;
     border-radius: 4px;
+    transition: all 0.18s var(--kintsugi-ease);
 }
 
 .toolBtn:hover {
-    background: #2a2016;
-    color: white;
+    background: rgba(213, 178, 97, 0.12);
+    color: var(--text-bright);
 }
 
 .divider {
     width: 1px;
     height: 16px;
-    background: #2a2016;
+    background: var(--kintsugi-border);
 }
 
 .deleteBtn {
@@ -135,15 +143,17 @@
     border: none;
     cursor: pointer;
     border-radius: 4px;
+    transition: all 0.18s var(--kintsugi-ease);
 }
 
 .deleteBtn:hover {
-    background: rgba(237, 66, 69, 0.1);
+    background: rgba(237, 66, 69, 0.12);
 }
 
 .deleteBtnDisabled {
-    color: #6b6258;
+    color: var(--text-dim);
     cursor: default;
+    opacity: 0.5;
 }
 
 .deleteBtnActive {
@@ -158,22 +168,27 @@
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    color: #0d0b0a;
+    color: var(--bg-deep);
     display: flex;
     align-items: center;
     justify-content: center;
     border: none;
     cursor: pointer;
-    transition: transform 0.1s;
+    transition: transform 0.1s, box-shadow 0.18s var(--kintsugi-ease);
 }
 
 .playBtnDefault {
-    background: linear-gradient(135deg, #d5b261, #b8943f);
-    box-shadow: 0 4px 12px rgba(213, 178, 97, 0.4);
+    background: linear-gradient(135deg, var(--kintsugi-gold-light), var(--kintsugi-gold), var(--kintsugi-gold-dark));
+    box-shadow: 0 4px 16px rgba(213, 178, 97, 0.45);
+}
+
+.playBtnDefault:hover {
+    box-shadow: 0 6px 24px rgba(213, 178, 97, 0.6);
 }
 
 .playBtnPlaying {
     background: #ed4245;
+    box-shadow: 0 4px 16px rgba(237, 66, 69, 0.4);
 }
 
 .playBtn:active {
@@ -186,16 +201,17 @@
     border-radius: 50%;
     background: transparent;
     border: none;
-    color: #6b6258;
+    color: var(--text-dim);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    transition: all 0.18s var(--kintsugi-ease);
 }
 
 .closeBtn:hover {
-    color: white;
-    background: #2a2016;
+    color: var(--kintsugi-gold);
+    background: rgba(213, 178, 97, 0.1);
 }
 
 /* ============================================ */
@@ -211,8 +227,10 @@
 /* SIDEBAR (Piano Keys) */
 /* ============================================ */
 .prSidebar {
-    background: #110e0c;
-    border-right: 1px solid #1e1a15;
+    background:
+        linear-gradient(90deg, rgba(14, 11, 9, 0.98) 0%, rgba(18, 14, 11, 0.95) 100%),
+        radial-gradient(100% 200% at 0% 50%, rgba(213, 178, 97, 0.06), transparent 60%);
+    border-right: 1px solid var(--kintsugi-border);
     position: relative;
 }
 
@@ -231,10 +249,11 @@
     font-size: 9px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.02);
     cursor: pointer;
+    transition: background 0.15s;
 }
 
 .sidebarKey:hover {
-    background: rgba(255, 255, 255, 0.05) !important;
+    background: rgba(213, 178, 97, 0.08) !important;
 }
 
 .keyBlack {
@@ -247,12 +266,12 @@
 
 .keyC {
     font-weight: bold;
-    color: #fff;
+    color: var(--kintsugi-gold-light);
 }
 
 .keyNonC {
     font-weight: normal;
-    color: #6b6258;
+    color: var(--text-dim);
 }
 
 /* Drum pad row in sidebar */
@@ -262,19 +281,20 @@
     padding: 0 6px;
     font-size: 9px;
     font-weight: 600;
-    color: #a0a0c0;
+    color: var(--text-dim);
     border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     cursor: pointer;
-    background: #101018;
+    background: rgba(14, 11, 9, 0.9);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     letter-spacing: 0.02em;
+    transition: background 0.15s, color 0.15s;
 }
 
 .drumKey:hover {
-    background: rgba(88, 101, 242, 0.12) !important;
-    color: #c0c0ff;
+    background: rgba(213, 178, 97, 0.1) !important;
+    color: var(--kintsugi-gold-light);
 }
 
 /* ============================================ */
@@ -283,7 +303,7 @@
 .prViewport {
     flex: 1;
     overflow: auto;
-    background: #0f0c0a;
+    background: rgba(12, 9, 7, 0.95);
     position: relative;
 }
 
@@ -296,10 +316,11 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: #0f0c0a;
-    border-top: 1px solid #1e1a15;
+    background:
+        linear-gradient(0deg, rgba(10, 8, 7, 0.98) 0%, rgba(14, 11, 9, 0.95) 100%);
+    border-top: 1px solid var(--kintsugi-border);
     font-size: 10px;
-    color: #6b6258;
+    color: var(--text-dim);
 }
 
 .shortcuts {
@@ -308,7 +329,7 @@
 }
 
 .shortcuts b {
-    color: #9a8f7e;
+    color: var(--kintsugi-gold-light);
 }
 
 /* ============================================ */
@@ -322,13 +343,15 @@
     position: absolute;
     top: calc(100% + 8px);
     right: 0;
-    background: #1c1711;
-    border: 1px solid #2a2016;
-    border-radius: 8px;
+    background:
+        var(--kintsugi-panel),
+        radial-gradient(120% 140% at 12% -10%, rgba(243, 221, 176, 0.08), transparent 60%);
+    border: 1px solid var(--kintsugi-border-strong);
+    border-radius: 10px;
     padding: 4px;
     z-index: 1100;
     min-width: 80px;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--kintsugi-shadow-soft), var(--kintsugi-shadow-gold);
 }
 
 .gridOption {
@@ -337,18 +360,20 @@
     text-align: left;
     font-size: 12px;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
     background: transparent;
-    color: #c5b89a;
+    color: var(--kintsugi-gold-light);
+    transition: all 0.15s var(--kintsugi-ease);
 }
 
 .gridOption:hover {
-    background: #2a2016;
-    color: white;
+    background: rgba(213, 178, 97, 0.12);
+    color: var(--text-bright);
 }
 
 .gridOptionActive {
-    background: #2a2016;
-    color: #fff;
+    background: rgba(213, 178, 97, 0.14);
+    color: var(--kintsugi-gold);
 }
+

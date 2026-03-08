@@ -1,5 +1,5 @@
 /* Landing Page Styles - Drey DAW */
-/* Extracted from inline styles for better performance and caching */
+/* Kintsugi theme deeply integrated */
 
 .landingContainer {
     min-height: 100vh;
@@ -19,9 +19,12 @@
     top: 0;
     width: 100%;
     z-index: 100;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    background: rgba(9, 7, 6, 0.82);
-    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--kintsugi-border);
+    background:
+        linear-gradient(180deg, rgba(9, 7, 6, 0.88) 0%, rgba(9, 7, 6, 0.72) 100%),
+        radial-gradient(800px 120px at 50% 0%, rgba(213, 178, 97, 0.08), transparent 70%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
 }
 
 .logoContainer {
@@ -31,7 +34,8 @@
 }
 
 .logoIcon {
-    color: #d5b261;
+    color: var(--kintsugi-gold);
+    filter: drop-shadow(0 0 8px rgba(213, 178, 97, 0.5));
 }
 
 .logoText {
@@ -52,71 +56,77 @@
 }
 
 .navLinks a {
-    color: #9a8f7e;
+    color: var(--text-dim);
     font-weight: 500;
-    transition: color 0.3s;
+    transition: color 0.3s var(--kintsugi-ease);
     text-decoration: none;
+    letter-spacing: 0.02em;
 }
 
 .navLinks a:hover {
-    color: #ffffff;
+    color: var(--text-bright);
 }
 
 /* ============================================ */
 /* BUTTONS */
 /* ============================================ */
 .btnPrimary {
-    background: #d5b261;
-    color: white;
+    background: linear-gradient(135deg, var(--kintsugi-gold-light), var(--kintsugi-gold), var(--kintsugi-gold-dark));
+    color: var(--bg-deep);
     border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    font-weight: 600;
-    transition: transform 0.2s, box-shadow 0.2s;
+    padding: 0.75rem 1.75rem;
+    border-radius: var(--radius-pill);
+    font-weight: 700;
+    transition: transform var(--kintsugi-ease) 180ms, box-shadow var(--kintsugi-ease) 180ms;
     cursor: pointer;
     text-decoration: none;
+    box-shadow: var(--kintsugi-shadow-gold);
+    letter-spacing: 0.02em;
 }
 
 .btnPrimary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(213, 178, 97, 0.4);
+    box-shadow: 0 12px 30px rgba(213, 178, 97, 0.45);
 }
 
 .btnGlow {
-    background: linear-gradient(135deg, #d5b261, #b8943f);
-    color: #0d0b0a;
+    background: linear-gradient(135deg, var(--kintsugi-gold-light), var(--kintsugi-gold), var(--kintsugi-gold-dark));
+    color: var(--bg-deep);
     border: none;
     padding: 1rem 2rem;
-    border-radius: 12px;
+    border-radius: var(--radius-pill);
     font-weight: 700;
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    box-shadow: 0 0 20px rgba(213, 178, 97, 0.35), inset 0 1px 0 rgba(255,255,255,0.15);
-    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: var(--kintsugi-shadow-gold), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: transform var(--kintsugi-ease) 180ms, box-shadow var(--kintsugi-ease) 180ms;
     cursor: pointer;
     text-decoration: none;
+    letter-spacing: 0.02em;
 }
 
 .btnGlow:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 36px rgba(213, 178, 97, 0.55), inset 0 1px 0 rgba(255,255,255,0.15);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 0 44px rgba(213, 178, 97, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .btnSecondary {
     background: rgba(213, 178, 97, 0.06);
-    color: #c5b89a;
-    border: 1px solid rgba(213, 178, 97, 0.18);
+    color: var(--kintsugi-gold-light);
+    border: 1px solid var(--kintsugi-border-strong);
     padding: 1rem 2rem;
-    border-radius: 12px;
+    border-radius: var(--radius-pill);
     font-weight: 600;
-    transition: background 0.3s, border-color 0.3s;
+    transition: background var(--kintsugi-ease) 180ms, border-color var(--kintsugi-ease) 180ms, transform var(--kintsugi-ease) 180ms;
     cursor: pointer;
+    letter-spacing: 0.02em;
 }
 
 .btnSecondary:hover {
-    background: rgba(213, 178, 97, 0.12);
-    border-color: rgba(213, 178, 97, 0.32);
+    background: rgba(213, 178, 97, 0.14);
+    border-color: rgba(213, 178, 97, 0.5);
+    transform: translateY(-1px);
 }
 
 /* ============================================ */
@@ -132,21 +142,55 @@
     position: relative;
 }
 
+/* Kintsugi halo glow above hero */
 .heroGlow {
     position: absolute;
     top: 0;
     left: 50%;
     transform: translateX(-50%);
-    width: 80vw;
-    height: 60vh;
-    background: radial-gradient(circle, rgba(213, 178, 97, 0.15) 0%, transparent 70%);
-    filter: blur(60px);
+    width: 100vw;
+    height: 70vh;
+    background:
+        radial-gradient(900px 400px at 50% 0%, var(--kintsugi-halo-gold), transparent 65%),
+        radial-gradient(700px 300px at 50% 5%, var(--kintsugi-ivory-glow), transparent 60%);
+    mix-blend-mode: screen;
     z-index: -1;
     pointer-events: none;
 }
 
+/* Decorative veins overlay */
+.hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+        repeating-linear-gradient(115deg, rgba(213, 178, 97, 0.07) 0 1px, transparent 1px 130px),
+        repeating-linear-gradient(40deg, rgba(213, 178, 97, 0.05) 0 1px, transparent 1px 100px);
+    mix-blend-mode: screen;
+    pointer-events: none;
+    z-index: 0;
+}
+
 .heroContent {
     max-width: 800px;
+    position: relative;
+    z-index: 1;
+}
+
+.heroBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 1.1rem;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--kintsugi-border-strong);
+    color: var(--kintsugi-gold);
+    background: rgba(213, 178, 97, 0.1);
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    font-size: 0.72rem;
+    font-weight: 600;
+    margin-bottom: 2rem;
 }
 
 .heroTitle {
@@ -155,7 +199,7 @@
     line-height: 1.1;
     margin-bottom: 1.5rem;
     letter-spacing: -2px;
-    color: #ffffff;
+    color: var(--text-bright);
     font-family: var(--font-display, 'Cinzel Decorative'), serif;
 }
 
@@ -168,14 +212,14 @@
 
 .heroSubtitle {
     font-size: 1.25rem;
-    color: #9a8f7e;
+    color: var(--text-dim);
     max-width: 600px;
     margin: 0 auto 3rem;
-    line-height: 1.6;
+    line-height: 1.7;
 }
 
 .heroSubtitle strong {
-    color: #c5b89a;
+    color: var(--kintsugi-gold-light);
 }
 
 .heroActions {
@@ -189,22 +233,28 @@
     width: 100%;
     max-width: 1200px;
     margin-top: 4rem;
+    position: relative;
+    z-index: 1;
 }
 
+/* Kintsugi gold shimmer frame around DAW preview */
 .heroImageWrapper {
-    padding: 4px;
-    border-radius: 16px;
+    padding: 1px;
+    border-radius: var(--radius-xl);
     overflow: hidden;
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: linear-gradient(135deg, var(--kintsugi-border-strong), var(--kintsugi-border), var(--kintsugi-border-strong));
+    box-shadow:
+        var(--kintsugi-shadow-soft),
+        0 0 60px rgba(213, 178, 97, 0.18),
+        inset 0 1px 0 rgba(213, 178, 97, 0.2);
 }
 
 .heroImage {
     width: 100%;
     height: auto;
-    border-radius: 12px;
+    border-radius: calc(var(--radius-xl) - 1px);
     display: block;
+    background: var(--bg-deep);
 }
 
 /* ============================================ */
@@ -214,6 +264,7 @@
     padding: 10rem 4rem;
     max-width: 1200px;
     margin: 0 auto;
+    position: relative;
 }
 
 .sectionHeader {
@@ -221,103 +272,179 @@
     margin-bottom: 5rem;
 }
 
+.sectionLabel {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 1rem;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--kintsugi-border-strong);
+    color: var(--kintsugi-gold);
+    background: rgba(213, 178, 97, 0.08);
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    font-size: 0.72rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+}
+
 .sectionTitle {
     font-size: 3rem;
     font-weight: 800;
     margin-bottom: 1rem;
-    color: #ffffff;
+    color: var(--text-bright);
     font-family: var(--font-display, 'Cinzel Decorative'), serif;
 }
 
 .sectionSubtitle {
-    color: #9a8f7e;
+    color: var(--text-dim);
     font-size: 1.25rem;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
 }
 
 .featuresGrid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2rem;
+    gap: 1.5rem;
 }
 
 /* ============================================ */
-/* FEATURE CARD */
+/* FEATURE CARD — kintsugi panel */
 /* ============================================ */
 .featureCard {
     padding: 2.5rem;
-    border-radius: 16px;
-    transition: transform 0.3s, border-color 0.3s;
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-xl);
+    transition: transform var(--kintsugi-ease) 240ms, box-shadow var(--kintsugi-ease) 240ms, border-color var(--kintsugi-ease) 240ms;
+    background:
+        var(--kintsugi-panel),
+        radial-gradient(120% 140% at 12% -10%, rgba(243, 221, 176, 0.12), transparent 60%),
+        repeating-linear-gradient(120deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 160px);
+    border: 1px solid var(--kintsugi-border);
+    box-shadow: var(--kintsugi-shadow-soft);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Foil shimmer on card */
+.featureCard::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+        radial-gradient(100% 100% at 75% 0%, rgba(213, 178, 97, 0.2) 0%, transparent 50%),
+        linear-gradient(110deg, rgba(255, 255, 255, 0.06), transparent 40%);
+    mix-blend-mode: screen;
+    pointer-events: none;
 }
 
 .featureCard:hover {
-    transform: translateY(-5px);
-    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-6px);
+    border-color: var(--kintsugi-border-strong);
+    box-shadow: var(--kintsugi-shadow-soft), var(--kintsugi-shadow-gold);
 }
 
 .featureIcon {
     margin-bottom: 1.5rem;
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(213, 178, 97, 0.12);
+    border: 1px solid var(--kintsugi-border-strong);
+    box-shadow: 0 0 16px rgba(213, 178, 97, 0.18);
 }
 
 .featureIcon svg {
-    width: 32px;
-    height: 32px;
+    width: 22px;
+    height: 22px;
+    color: var(--kintsugi-gold);
 }
 
 .featureTitle {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     font-weight: 700;
     margin-bottom: 0.75rem;
-    color: #ffffff;
+    color: var(--text-bright);
+    font-family: var(--font-display, 'Cinzel Decorative'), serif;
+    letter-spacing: -0.01em;
 }
 
 .featureDescription {
-    color: #9a8f7e;
-    line-height: 1.5;
+    color: var(--text-dim);
+    line-height: 1.65;
+    font-size: 0.9375rem;
 }
 
 /* ============================================ */
-/* WINGMAN HIGHLIGHT */
+/* WINGMAN HIGHLIGHT — kintsugi panel strong */
 /* ============================================ */
 .wingmanHighlight {
     margin: 0 4rem 10rem;
-    padding: 6rem;
-    border-radius: 24px;
+    padding: 5rem 6rem;
+    border-radius: var(--radius-xl);
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 4rem;
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    position: relative;
+    overflow: hidden;
+    background:
+        var(--kintsugi-panel-strong),
+        radial-gradient(140% 140% at 18% -10%, rgba(243, 221, 176, 0.18), transparent 58%),
+        repeating-linear-gradient(110deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 140px);
+    border: 1px solid var(--kintsugi-border-strong);
+    box-shadow: var(--kintsugi-shadow-inner), var(--kintsugi-shadow-soft);
+}
+
+/* Kintsugi veins overlay */
+.wingmanHighlight::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+        repeating-linear-gradient(115deg, rgba(213, 178, 97, 0.07) 0 1px, transparent 1px 100px),
+        repeating-linear-gradient(40deg, rgba(213, 178, 97, 0.05) 0 1px, transparent 1px 80px);
+    mix-blend-mode: screen;
+    pointer-events: none;
+}
+
+.wingmanContent {
+    position: relative;
+    z-index: 1;
 }
 
 .wingmanContent h2 {
     font-size: 2.5rem;
     font-weight: 800;
     margin-bottom: 1rem;
-    color: #ffffff;
+    color: var(--text-bright);
+    font-family: var(--font-display, 'Cinzel Decorative'), serif;
+    letter-spacing: -0.02em;
 }
 
 .wingmanContent p {
-    color: #9a8f7e;
+    color: var(--text-dim);
     font-size: 1.1rem;
-    line-height: 1.6;
+    line-height: 1.7;
     max-width: 500px;
 }
 
 .wingmanBadge {
     background: rgba(243, 221, 176, 0.1);
-    color: #f3ddb0;
-    padding: 0.5rem 1rem;
-    border-radius: 100px;
-    font-size: 0.875rem;
+    color: var(--kintsugi-gold-light);
+    padding: 0.4rem 1.1rem;
+    border-radius: var(--radius-pill);
+    font-size: 0.75rem;
     font-weight: 700;
     display: inline-block;
     margin-bottom: 1.5rem;
-    border: 1px solid rgba(243, 221, 176, 0.2);
+    border: 1px solid rgba(243, 221, 176, 0.25);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
 }
 
 .wingmanList {
@@ -333,41 +460,34 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: #9a8f7e;
+    color: var(--text-dim);
     font-size: 0.9375rem;
 }
 
 .wingmanList li svg {
-    color: #f3ddb0;
+    color: var(--kintsugi-gold-light);
+    flex-shrink: 0;
 }
 
 .wingmanVisual {
     flex-shrink: 0;
+    position: relative;
+    z-index: 1;
 }
 
 .aiGlowOrb {
     width: 300px;
     height: 300px;
-    background: radial-gradient(circle, rgba(243, 221, 176, 0.2) 0%, transparent 70%);
+    background:
+        radial-gradient(circle at 40% 35%, rgba(243, 221, 176, 0.35) 0%, rgba(213, 178, 97, 0.2) 35%, transparent 70%);
     filter: blur(40px);
-    animation: pulse 4s infinite ease-in-out;
+    animation: kintsugiPulse 4s infinite ease-in-out;
 }
 
-@keyframes pulse {
-    0% {
-        transform: scale(1);
-        opacity: 0.5;
-    }
-
-    50% {
-        transform: scale(1.2);
-        opacity: 0.8;
-    }
-
-    100% {
-        transform: scale(1);
-        opacity: 0.5;
-    }
+@keyframes kintsugiPulse {
+    0%   { transform: scale(1);   opacity: 0.5; }
+    50%  { transform: scale(1.15); opacity: 0.85; }
+    100% { transform: scale(1);   opacity: 0.5; }
 }
 
 /* ============================================ */
@@ -375,8 +495,11 @@
 /* ============================================ */
 .footer {
     padding: 4rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-top: 1px solid var(--kintsugi-border);
     text-align: center;
+    background:
+        linear-gradient(0deg, rgba(7, 6, 5, 0.85) 0%, transparent 100%),
+        radial-gradient(800px 200px at 50% 100%, rgba(213, 178, 97, 0.06), transparent 70%);
 }
 
 .footerContent {
@@ -384,7 +507,7 @@
     margin: 0 auto;
     display: flex;
     justify-content: space-between;
-    color: #9a8f7e;
+    color: var(--text-dim);
 }
 
 .footerLinks {
@@ -393,37 +516,23 @@
 }
 
 .footerLinks a {
-    color: #9a8f7e;
+    color: var(--text-dim);
     text-decoration: none;
-    transition: color 0.3s;
+    transition: color 0.3s var(--kintsugi-ease);
 }
 
 .footerLinks a:hover {
-    color: #ffffff;
+    color: var(--kintsugi-gold);
 }
 
 /* ============================================ */
 /* ACCENT COLORS */
 /* ============================================ */
-.accentBlue {
-    color: #d5b261;
-}
-
-.accentPink {
-    color: #f3ddb0;
-}
-
-.accentPurple {
-    color: #c9a84c;
-}
-
-.accentGreen {
-    color: #10b981;
-}
-
-.accentOrange {
-    color: #d5b261;
-}
+.accentBlue   { color: var(--kintsugi-gold); }
+.accentPink   { color: var(--kintsugi-gold-light); }
+.accentPurple { color: #c9a84c; }
+.accentGreen  { color: #10b981; }
+.accentOrange { color: var(--kintsugi-gold); }
 
 /* ============================================ */
 /* RESPONSIVE */
@@ -464,3 +573,4 @@
         gap: 1rem;
     }
 }
+

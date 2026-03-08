@@ -3,8 +3,8 @@
 .overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.88);
+    backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -12,13 +12,16 @@
 }
 
 .modal {
-    background: #0f0c0a;
-    border: 1px solid #2a2016;
-    border-radius: 16px;
+    background:
+        var(--kintsugi-panel),
+        radial-gradient(120% 140% at 12% -10%, rgba(243, 221, 176, 0.12), transparent 60%),
+        repeating-linear-gradient(120deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 160px);
+    border: 1px solid var(--kintsugi-border);
+    border-radius: var(--radius-xl);
     width: 90%;
     max-width: 480px;
     overflow: hidden;
-    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--kintsugi-shadow-soft), var(--kintsugi-shadow-gold);
 }
 
 .header {
@@ -26,7 +29,10 @@
     align-items: center;
     justify-content: space-between;
     padding: 1rem 1.25rem;
-    border-bottom: 1px solid #1e1a15;
+    border-bottom: 1px solid var(--kintsugi-border);
+    background:
+        linear-gradient(180deg, rgba(20, 16, 12, 0.98) 0%, rgba(14, 11, 9, 0.95) 100%),
+        radial-gradient(600px 60px at 50% 0%, rgba(213, 178, 97, 0.08), transparent 70%);
 }
 
 .titleRow {
@@ -39,21 +45,24 @@
     margin: 0;
     font-size: 1rem;
     font-weight: 600;
-    color: #fff;
+    color: var(--text-bright);
+    font-family: var(--font-display, 'Cinzel Decorative'), serif;
 }
 
 .closeBtn {
     background: none;
     border: none;
-    color: #6b6258;
+    color: var(--text-dim);
     cursor: pointer;
     padding: 4px;
     display: flex;
-    transition: color 0.2s;
+    transition: color 0.2s var(--kintsugi-ease);
+    border-radius: 6px;
 }
 
 .closeBtn:hover {
-    color: #fff;
+    color: var(--kintsugi-gold);
+    background: rgba(213, 178, 97, 0.1);
 }
 
 .error {
@@ -77,35 +86,38 @@
 }
 
 .micIcon {
-    color: #d5b261;
+    color: var(--kintsugi-gold);
     margin-bottom: 1rem;
+    filter: drop-shadow(0 0 10px rgba(213, 178, 97, 0.5));
 }
 
 .initSection p {
-    color: #9a8f7e;
+    color: var(--text-dim);
     font-size: 0.875rem;
     margin-bottom: 1.5rem;
     max-width: 280px;
+    line-height: 1.6;
 }
 
 .primaryBtn {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    background: #d5b261;
-    color: white;
+    background: linear-gradient(135deg, var(--kintsugi-gold-light), var(--kintsugi-gold), var(--kintsugi-gold-dark));
+    color: var(--bg-deep);
     border: none;
-    padding: 0.75rem 1.25rem;
-    border-radius: 8px;
-    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-pill);
+    font-weight: 700;
     font-size: 0.875rem;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s var(--kintsugi-ease);
+    box-shadow: var(--kintsugi-shadow-gold);
 }
 
 .primaryBtn:hover {
-    background: #b8943f;
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 26px rgba(213, 178, 97, 0.45);
 }
 
 .visualizer {
@@ -116,31 +128,33 @@
 .canvas {
     width: 100%;
     height: 200px;
-    border-radius: 8px;
-    border: 1px solid #1e1a15;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--kintsugi-border);
+    background: var(--bg-deep);
 }
 
 .pitchDisplay {
     position: absolute;
     top: 1rem;
     right: 1rem;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.75);
     padding: 0.5rem 0.75rem;
     border-radius: 8px;
     display: flex;
     align-items: baseline;
     gap: 0.5rem;
+    border: 1px solid var(--kintsugi-border);
 }
 
 .noteName {
     font-size: 1.25rem;
     font-weight: 700;
-    color: #fff;
+    color: var(--kintsugi-gold-light);
 }
 
 .cents {
     font-size: 0.75rem;
-    color: #9a8f7e;
+    color: var(--text-dim);
 }
 
 .controls {
@@ -154,19 +168,20 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    border: none;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-bright);
+    border: 1px solid var(--kintsugi-border);
     padding: 0.75rem 1.25rem;
-    border-radius: 8px;
+    border-radius: var(--radius-pill);
     font-weight: 600;
     font-size: 0.875rem;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.18s var(--kintsugi-ease);
 }
 
 .stopBtn:hover {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(213, 178, 97, 0.1);
+    border-color: var(--kintsugi-border-strong);
 }
 
 .recordBtn {
@@ -177,15 +192,17 @@
     color: white;
     border: none;
     padding: 0.75rem 1.25rem;
-    border-radius: 8px;
+    border-radius: var(--radius-pill);
     font-weight: 600;
     font-size: 0.875rem;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.18s var(--kintsugi-ease);
+    box-shadow: 0 4px 14px rgba(237, 66, 69, 0.35);
 }
 
 .recordBtn:hover {
     background: #c93b3e;
+    transform: translateY(-1px);
 }
 
 .recordingBtn {
@@ -196,42 +213,37 @@
     color: white;
     border: none;
     padding: 0.75rem 1.25rem;
-    border-radius: 8px;
+    border-radius: var(--radius-pill);
     font-weight: 600;
     font-size: 0.875rem;
     cursor: pointer;
-    animation: pulse 1s ease-in-out infinite;
+    animation: pulseBeat 1s ease-in-out infinite;
+    box-shadow: 0 4px 14px rgba(237, 66, 69, 0.45);
 }
 
-@keyframes pulse {
-
-    0%,
-    100% {
-        opacity: 1;
-    }
-
-    50% {
-        opacity: 0.7;
-    }
+@keyframes pulseBeat {
+    0%, 100% { opacity: 1; box-shadow: 0 4px 14px rgba(237, 66, 69, 0.45); }
+    50%       { opacity: 0.75; box-shadow: 0 4px 22px rgba(237, 66, 69, 0.65); }
 }
 
 .results {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid #1e1a15;
-    border-radius: 12px;
+    background:
+        linear-gradient(145deg, rgba(24, 20, 15, 0.9), rgba(14, 11, 9, 0.9));
+    border: 1px solid var(--kintsugi-border);
+    border-radius: var(--radius-lg);
     padding: 1rem;
     margin-top: 1rem;
 }
 
 .noteCount {
     text-align: center;
-    color: #9a8f7e;
+    color: var(--text-dim);
     font-size: 0.875rem;
     margin-bottom: 0.75rem;
 }
 
 .noteCount strong {
-    color: #fff;
+    color: var(--kintsugi-gold-light);
 }
 
 .noteList {
@@ -244,11 +256,12 @@
 
 .noteTag {
     background: rgba(213, 178, 97, 0.15);
-    color: #d5b261;
+    color: var(--kintsugi-gold);
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
     font-size: 0.75rem;
     font-weight: 600;
+    border: 1px solid var(--kintsugi-border);
 }
 
 .useBtn {
@@ -257,18 +270,19 @@
     justify-content: center;
     gap: 0.5rem;
     width: 100%;
-    background: linear-gradient(135deg, #d5b261, #b8943f);
-    color: #0d0b0a;
+    background: linear-gradient(135deg, var(--kintsugi-gold-light), var(--kintsugi-gold), var(--kintsugi-gold-dark));
+    color: var(--bg-deep);
     border: none;
     padding: 0.75rem;
-    border-radius: 8px;
+    border-radius: var(--radius-pill);
     font-weight: 700;
     font-size: 0.875rem;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s var(--kintsugi-ease);
+    box-shadow: var(--kintsugi-shadow-gold);
 }
 
 .useBtn:hover {
-    background: linear-gradient(135deg, #e8c97a, #d5b261);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 26px rgba(213, 178, 97, 0.45);
 }

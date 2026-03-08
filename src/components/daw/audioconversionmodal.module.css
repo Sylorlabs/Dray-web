@@ -6,8 +6,8 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.78);
+    backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -15,14 +15,15 @@
 }
 
 .modal {
-    background: var(--surface, #1e1a15);
-    border-radius: 16px;
+    background:
+        var(--kintsugi-panel, linear-gradient(165deg, rgba(34, 29, 25, 0.98), rgba(14, 12, 11, 0.94)));
+    border-radius: var(--radius-xl, 24px);
     padding: 24px;
     width: 90%;
     max-width: 500px;
     position: relative;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-    border: 1px solid var(--border, #333);
+    box-shadow: var(--kintsugi-shadow-soft, 0 26px 70px rgba(7, 6, 5, 0.55)), var(--kintsugi-shadow-gold, 0 0 28px rgba(213, 178, 97, 0.32));
+    border: 1px solid var(--kintsugi-border, rgba(213, 178, 97, 0.16));
 }
 
 .closeButton {
@@ -31,28 +32,29 @@
     right: 16px;
     background: transparent;
     border: none;
-    color: var(--text-secondary, #888);
+    color: var(--text-dim, #9a8f7e);
     cursor: pointer;
     padding: 4px;
-    border-radius: 4px;
-    transition: all 0.2s;
+    border-radius: 6px;
+    transition: all 0.18s var(--kintsugi-ease, cubic-bezier(0.22, 1, 0.36, 1));
 }
 
 .closeButton:hover {
-    color: var(--text, #fff);
-    background: var(--surface-hover, #2a2016);
+    color: var(--kintsugi-gold, #d5b261);
+    background: rgba(213, 178, 97, 0.1);
 }
 
 .title {
     font-size: 1.5rem;
     font-weight: 600;
     margin: 0 0 4px 0;
-    color: var(--text, #fff);
+    color: var(--text-bright, #fff);
+    font-family: var(--font-display, 'Cinzel Decorative'), serif;
 }
 
 .subtitle {
     font-size: 0.85rem;
-    color: var(--text-secondary, #888);
+    color: var(--text-dim, #9a8f7e);
     margin: 0 0 24px 0;
     word-break: break-all;
 }
@@ -65,23 +67,26 @@
 }
 
 .modeCard {
-    background: var(--surface-alt, #252535);
+    background:
+        linear-gradient(145deg, rgba(28, 23, 17, 0.9), rgba(18, 14, 11, 0.9));
     border: 2px solid transparent;
-    border-radius: 12px;
+    border-radius: var(--radius-lg, 16px);
     padding: 16px 12px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s var(--kintsugi-ease, cubic-bezier(0.22, 1, 0.36, 1));
     text-align: center;
 }
 
 .modeCard:hover:not(:disabled) {
-    background: var(--surface-hover, #2a2016);
-    border-color: var(--border, #444);
+    background:
+        linear-gradient(145deg, rgba(34, 28, 20, 0.95), rgba(22, 17, 13, 0.95));
+    border-color: var(--kintsugi-border-strong, rgba(213, 178, 97, 0.36));
 }
 
 .modeCard.selected {
-    border-color: var(--accent, #d5b261);
-    background: rgba(213, 178, 97, 0.15);
+    border-color: var(--kintsugi-gold, #d5b261);
+    background: rgba(213, 178, 97, 0.12);
+    box-shadow: 0 0 16px rgba(213, 178, 97, 0.2);
 }
 
 .modeCard:disabled {
@@ -90,20 +95,21 @@
 }
 
 .modeIcon {
-    color: var(--accent, #d5b261);
+    color: var(--kintsugi-gold, #d5b261);
     margin-bottom: 8px;
+    filter: drop-shadow(0 0 6px rgba(213, 178, 97, 0.4));
 }
 
 .modeTitle {
     font-weight: 600;
     font-size: 0.95rem;
-    color: var(--text, #fff);
+    color: var(--text-bright, #fff);
     margin-bottom: 4px;
 }
 
 .modeDescription {
     font-size: 0.75rem;
-    color: var(--text-secondary, #888);
+    color: var(--text-dim, #9a8f7e);
     line-height: 1.4;
 }
 
@@ -113,43 +119,43 @@
     align-items: center;
     gap: 12px;
     padding: 20px;
-    background: var(--surface-alt, #252535);
-    border-radius: 12px;
+    background:
+        linear-gradient(145deg, rgba(24, 20, 15, 0.9), rgba(14, 11, 9, 0.9));
+    border: 1px solid var(--kintsugi-border, rgba(213, 178, 97, 0.16));
+    border-radius: var(--radius-lg, 16px);
     margin-bottom: 20px;
 }
 
 .spinner {
     animation: spin 1s linear infinite;
-    color: var(--accent, #d5b261);
+    color: var(--kintsugi-gold, #d5b261);
+    filter: drop-shadow(0 0 8px rgba(213, 178, 97, 0.5));
 }
 
 @keyframes spin {
-    from {
-        transform: rotate(0deg);
-    }
-
-    to {
-        transform: rotate(360deg);
-    }
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
 }
 
 .progressText {
     font-size: 0.9rem;
-    color: var(--text, #fff);
+    color: var(--text-bright, #fff);
 }
 
 .progressBar {
     width: 100%;
     height: 4px;
-    background: var(--border, #333);
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--kintsugi-border, rgba(213, 178, 97, 0.16));
     border-radius: 2px;
     overflow: hidden;
 }
 
 .progressFill {
     height: 100%;
-    background: var(--accent, #d5b261);
+    background: linear-gradient(90deg, var(--kintsugi-gold-dark, #7a5a25), var(--kintsugi-gold, #d5b261), var(--kintsugi-gold-light, #f3ddb0));
     transition: width 0.3s ease;
+    box-shadow: 0 0 8px rgba(213, 178, 97, 0.4);
 }
 
 .errorBox {
@@ -173,7 +179,7 @@
     background: rgba(213, 178, 97, 0.12);
     border: 1px solid rgba(213, 178, 97, 0.28);
     border-radius: 8px;
-    color: #d5b261;
+    color: var(--kintsugi-gold, #d5b261);
     font-size: 0.9rem;
     margin-bottom: 20px;
 }
@@ -186,47 +192,40 @@
 
 .cancelButton {
     background: transparent;
-    border: 1px solid var(--border, #444);
-    color: var(--text, #fff);
+    border: 1px solid var(--kintsugi-border-strong, rgba(213, 178, 97, 0.36));
+    color: var(--text-bright, #fff);
     padding: 10px 20px;
-    border-radius: 8px;
+    border-radius: var(--radius-pill, 999px);
     cursor: pointer;
     font-size: 0.9rem;
-    transition: all 0.2s;
+    transition: all 0.18s var(--kintsugi-ease, cubic-bezier(0.22, 1, 0.36, 1));
 }
 
 .cancelButton:hover {
-    background: var(--surface-hover, #2a2016);
+    background: rgba(213, 178, 97, 0.08);
 }
 
 .convertButton,
 .applyButton {
-    background: linear-gradient(135deg, #d5b261, #b8943f);
+    background: linear-gradient(135deg, var(--kintsugi-gold-light, #f3ddb0), var(--kintsugi-gold, #d5b261), var(--kintsugi-gold-dark, #7a5a25));
     border: none;
-    color: #0d0b0a;
+    color: var(--bg-deep, #0d0b0a);
     padding: 10px 24px;
-    border-radius: 8px;
+    border-radius: var(--radius-pill, 999px);
     cursor: pointer;
     font-size: 0.9rem;
-    font-weight: 600;
-    transition: all 0.2s;
+    font-weight: 700;
+    transition: all 0.18s var(--kintsugi-ease, cubic-bezier(0.22, 1, 0.36, 1));
+    box-shadow: 0 4px 16px rgba(213, 178, 97, 0.3);
 }
 
 .convertButton:hover:not(:disabled),
 .applyButton:hover {
-    background: linear-gradient(135deg, #e8c97a, #d5b261);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(213, 178, 97, 0.45);
 }
 
 .convertButton:disabled {
     opacity: 0.6;
     cursor: not-allowed;
-}
-
-.applyButton {
-    background: linear-gradient(135deg, #d5b261, #b8943f);
-    color: #0d0b0a;
-}
-
-.applyButton:hover {
-    background: linear-gradient(135deg, #e8c97a, #d5b261);
 }

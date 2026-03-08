@@ -2,8 +2,10 @@
 
 .browser {
     width: 200px;
-    background: #0f0c0a;
-    border-left: 1px solid #1e1a15;
+    background:
+        linear-gradient(180deg, rgba(12, 9, 7, 0.98) 0%, rgba(10, 8, 7, 0.96) 100%),
+        radial-gradient(200px 400px at 0% 50%, rgba(213, 178, 97, 0.05), transparent 70%);
+    border-left: 1px solid var(--kintsugi-border);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -14,27 +16,31 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.75rem 1rem;
-    border-bottom: 1px solid #1e1a15;
+    border-bottom: 1px solid var(--kintsugi-border);
     font-size: 0.8125rem;
     font-weight: 600;
-    color: #c5b89a;
+    color: var(--kintsugi-gold-light);
+    background:
+        linear-gradient(180deg, rgba(20, 16, 12, 0.98) 0%, rgba(14, 11, 9, 0.95) 100%),
+        radial-gradient(600px 60px at 50% 0%, rgba(213, 178, 97, 0.08), transparent 70%);
 }
 
 .header svg {
-    color: #d5b261;
+    color: var(--kintsugi-gold);
+    filter: drop-shadow(0 0 6px rgba(213, 178, 97, 0.4));
 }
 
 .count {
     margin-left: auto;
     font-size: 0.6875rem;
-    color: #6b6258;
+    color: var(--text-dim);
 }
 
 .hint {
     padding: 0.5rem 1rem;
     font-size: 0.6875rem;
-    color: #6b6258;
-    border-bottom: 1px solid #1e1a15;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--kintsugi-border);
 }
 
 .categories {
@@ -43,7 +49,7 @@
 }
 
 .category {
-    border-bottom: 1px solid #1c1711;
+    border-bottom: 1px solid rgba(213, 178, 97, 0.06);
 }
 
 .categoryHeader {
@@ -54,26 +60,26 @@
     padding: 0.625rem 1rem;
     background: none;
     border: none;
-    color: #9a8f7e;
+    color: var(--text-dim);
     font-size: 0.75rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s var(--kintsugi-ease);
 }
 
 .categoryHeader:hover {
-    background: rgba(255, 255, 255, 0.03);
-    color: white;
+    background: rgba(213, 178, 97, 0.06);
+    color: var(--kintsugi-gold-light);
 }
 
 .categoryCount {
     margin-left: auto;
     font-size: 0.625rem;
-    color: #6b6258;
+    color: var(--text-dim);
 }
 
 .soundsList {
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.3);
 }
 
 .soundItem {
@@ -82,26 +88,28 @@
     gap: 0.5rem;
     padding: 0.5rem 1rem 0.5rem 2rem;
     font-size: 0.75rem;
-    color: #9a8f7e;
+    color: var(--text-dim);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all 0.15s var(--kintsugi-ease);
     user-select: none;
 }
 
 .soundItem:hover {
     background: rgba(213, 178, 97, 0.1);
-    color: white;
+    color: var(--text-bright);
 }
 
 .soundItem:active {
-    background: rgba(213, 178, 97, 0.2);
+    background: rgba(213, 178, 97, 0.18);
 }
 
 .soundItem svg {
-    color: #d5b261;
+    color: var(--kintsugi-gold);
     opacity: 0.6;
+    transition: opacity 0.15s;
 }
 
 .soundItem:hover svg {
     opacity: 1;
+    filter: drop-shadow(0 0 4px rgba(213, 178, 97, 0.5));
 }

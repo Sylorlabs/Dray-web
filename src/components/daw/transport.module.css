@@ -6,8 +6,10 @@
     justify-content: space-between;
     padding: 0 1rem;
     height: 48px;
-    background: linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-deep) 100%);
-    border-bottom: 1px solid var(--border-bright);
+    background:
+        linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-deep) 100%),
+        radial-gradient(1000px 80px at 50% 0%, rgba(213, 178, 97, 0.07), transparent 70%);
+    border-bottom: 1px solid var(--kintsugi-border);
     flex-shrink: 0;
 }
 
@@ -41,17 +43,19 @@
     font-size: 0.8125rem;
     color: var(--text-dim);
     padding-left: 0.75rem;
-    border-left: 1px solid var(--border-bright);
+    border-left: 1px solid var(--kintsugi-border);
 }
 
 .transport {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    background: rgba(255, 255, 255, 0.04);
+    background:
+        linear-gradient(145deg, rgba(28, 22, 16, 0.6), rgba(14, 11, 9, 0.6)),
+        radial-gradient(300px 60px at 50% 50%, rgba(213, 178, 97, 0.06), transparent 70%);
     padding: 0.25rem;
     border-radius: var(--radius-lg);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--kintsugi-border);
     position: relative; /* create a stacking context for children */
 }
 
@@ -81,8 +85,8 @@
 }
 
 .play {
-    background: linear-gradient(135deg, #d5b261, #b8943f);
-    color: #0d0b0a;
+    background: linear-gradient(135deg, var(--kintsugi-gold-light), var(--kintsugi-gold), var(--kintsugi-gold-dark));
+    color: var(--bg-deep);
     width: 36px;
     height: 36px;
     border-radius: 50%;
@@ -94,12 +98,15 @@
     transform-origin: center center;
     position: relative;
     z-index: 20;
-    box-shadow: 0 2px 12px rgba(213, 178, 97, 0.35);
+    box-shadow: 0 2px 16px rgba(213, 178, 97, 0.45), 0 0 0 1px rgba(213, 178, 97, 0.2);
+    animation: kintsugi-pulse-gold 3s ease-in-out infinite;
 }
 
 .play:hover {
-    background: linear-gradient(135deg, #e8c97a, #d5b261);
-    transform: scale(1.05);
+    background: linear-gradient(135deg, #f0d88a, var(--kintsugi-gold-light), var(--kintsugi-gold));
+    transform: scale(1.07);
+    box-shadow: 0 4px 24px rgba(213, 178, 97, 0.65);
+    animation: none;
 }
 
 .record:hover {
