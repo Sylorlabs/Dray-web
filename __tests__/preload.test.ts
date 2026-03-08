@@ -12,9 +12,8 @@ describe('preload', () => {
     const sched = AudioScheduler.getInstance();
     
     // Should handle error gracefully and not throw
-    await sched.preloadAudioClip('http://invalid-url.local/test.wav');
-    
-    // Should not throw
-    expect(true).toBe(true);
+    await expect(
+      sched.preloadAudioClip('http://invalid-url.local/test.wav')
+    ).resolves.not.toThrow();
   }, PRELOAD_TEST_TIMEOUT);
 });

@@ -30,8 +30,9 @@ describe('Worklet timing mapping', () => {
   it('receives tick aligned to engine time mapping', async () => {
     const sched = AudioScheduler.getInstance();
     await sched.start();
+    expect(sched.isRunning()).toBe(true);
     await new Promise(r => setTimeout(r, 50));
     await sched.stop();
-    expect(true).toBe(true);
+    expect(sched.isRunning()).toBe(false);
   });
 });

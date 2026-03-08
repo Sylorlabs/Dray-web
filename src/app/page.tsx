@@ -11,16 +11,16 @@ export default function Home() {
   return (
     <div className={styles.landingContainer}>
       {/* Navbar */}
-      <nav className={styles.navbar}>
+      <nav className={styles.navbar} aria-label="Main navigation">
         <div className={styles.logoContainer}>
-          <Sparkles className={styles.logoIcon} />
+          <Sparkles className={styles.logoIcon} aria-hidden="true" />
           <span className={styles.logoText}>Drey</span>
         </div>
         <div className={styles.navLinks}>
           <a href="#features">Features</a>
           <a href="#wingman">Wingman AI</a>
           <ThemeToggle />
-          <Link href="/daw" className={styles.btnPrimary}>Launch App</Link>
+          <Link href="/daw" className={styles.btnPrimary} aria-label="Launch Drey DAW application">Launch App</Link>
         </div>
       </nav>
 
@@ -41,8 +41,8 @@ export default function Home() {
             No downloads. No experience needed. Just start creating.
           </p>
           <div className={styles.heroActions}>
-            <Link href="/daw" className={styles.btnGlow}>
-              Start Making Music <ArrowRight size={18} />
+            <Link href="/daw" className={styles.btnGlow} aria-label="Start making music in Drey">
+              Start Making Music <ArrowRight size={18} aria-hidden="true" />
             </Link>
           </div>
         </motion.div>

@@ -4,6 +4,7 @@ import React, { useState, useCallback, useRef } from 'react';
 import { Upload, Split, Download, Play, Pause, X, Music, Drum, Mic2, Waves } from 'lucide-react';
 import { stemSeparator, StemType } from '../../lib/stemSeparator';
 import { audioEngine } from '../../lib/audioEngine';
+import { logger } from '../../lib/logger';
 import styles from './stemseparator.module.css';
 
 interface StemSeparatorProps {
@@ -99,7 +100,7 @@ export default function StemSeparatorUI({ onClose }: StemSeparatorProps) {
                 }
             });
         } catch (err) {
-            console.error('Separation failed:', err);
+            logger.error('Separation failed:', err);
             setError('Failed to process audio. Please try a different file.');
         } finally {
             setIsProcessing(false);

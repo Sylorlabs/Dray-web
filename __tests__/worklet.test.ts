@@ -37,9 +37,10 @@ describe('Worklet integration', () => {
   it('registers worklet and reacts to tick', async () => {
     const sched = AudioScheduler.getInstance();
     await sched.start();
+    expect(sched.isRunning()).toBe(true);
     // Give some time for the mocked tick to arrive
     await new Promise(r => setTimeout(r, 50));
     await sched.stop();
-    expect(true).toBe(true);
+    expect(sched.isRunning()).toBe(false);
   }, 10000);
 });

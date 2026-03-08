@@ -34,8 +34,39 @@ export interface Clip {
     reverse?: boolean;
 }
 
+export interface TrackFX {
+    reverbMix: number;  // 0-1
+    delayMix: number;   // 0-1
+    delayTime: number;  // seconds
+    eqLow: number;      // -12 to 12 dB
+    eqMid: number;      // -12 to 12 dB
+    eqHigh: number;     // -12 to 12 dB
+}
+
+export const DEFAULT_TRACK_FX: TrackFX = {
+    reverbMix: 0,
+    delayMix: 0,
+    delayTime: 0.3,
+    eqLow: 0,
+    eqMid: 0,
+    eqHigh: 0,
+};
+
+export interface AutomationPoint {
+    beat: number;       // Position in beats
+    value: number;      // 0-1 normalized
+}
+
+export type AutomationParam = 'volume' | 'pan';
+
+export interface AutomationLane {
+    param: AutomationParam;
+    points: AutomationPoint[];
+}
+
 export interface Track {
     id: number;
+    projectId?: number;
     name: string;
     type: TrackType;
     color: string;
@@ -47,6 +78,8 @@ export interface Track {
     meterR: number;     // 0-1 (for visualization)
     instrument?: string;
     clips: Clip[];
+    fx?: TrackFX;
+    automation?: AutomationLane[];
 }
 
 // ============================================

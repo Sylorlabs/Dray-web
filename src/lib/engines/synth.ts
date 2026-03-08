@@ -1,13 +1,26 @@
 import { ensureTone } from '../toneWrapper';
 import type { ToneLibType } from '../toneWrapper';
 import { audioEngine } from '../audioEngine';
+import { logger } from '../logger';
 import { globalReverbs } from './globalReverb';
 
 // Efficient Synth Engine using Tone.PolySynth for voice pooling
 // Reduces CPU usage by ~70% compared to manual node creation per note.
 
+/** A Tone.js audio node with a dispose method */
+interface DisposableNode {
+    dispose(): void;
+    connect?(dest: unknown): unknown;
+}
+
+/** Bundle of a synth + its effect chain */
+interface SynthBundle {
+    synth: DisposableNode & { triggerAttackRelease: (...args: unknown[]) => void; triggerRelease?: (...args: unknown[]) => void; releaseAll?: () => void };
+    effects: DisposableNode[];
+}
+
 class ToneSynthEngine {
-    private trackSynths: Map<string, any> = new Map(); // Key: `${trackId}-${presetName}`
+    private trackSynths: Map<string, SynthBundle> = new Map(); // Key: `${trackId}-${presetName}`
     private initialized = false;
     private initializationPromise: Promise<void> | null = null;
     private readonly MAX_POLYPHONY = 16;
@@ -31,9 +44,9 @@ class ToneSynthEngine {
     }
 
     // Connects a source to the global reverb bus
-    private attachReverb(source: any, type: 'short' | 'medium' | 'long', amount: number, key: string) {
+    private attachReverb(source: DisposableNode, type: 'short' | 'medium' | 'long', amount: number, key: string) {
         // We use a send gain
-        ensureTone().then((ToneLib: any) => {
+        ensureTone().then((ToneLib: ToneLibType) => {
             const reverb = globalReverbs.getReverb(type);
             if (!reverb) return;
 
@@ -54,8 +67,8 @@ class ToneSynthEngine {
         const ToneLib = await ensureTone() as ToneLibType;
         const dest = this.getDest(trackId);
 
-        let synth: any;
-        let effects: any[] = [];
+        let synth: SynthBundle['synth'];
+        let effects: DisposableNode[] = [];
         let reverbInfo: { type: 'short' | 'medium' | 'long', amount: number } | null = { type: 'medium', amount: 0.2 };
 
         // --------------------------------------------------------------------------
@@ -543,7 +556,7 @@ class ToneSynthEngine {
 
         const bundle = { synth, effects };
         this.trackSynths.set(key, bundle);
-        console.log(`[SynthEngine] Created optimized PolySynth for ${preset}`);
+        logger.debug(`[SynthEngine] Created optimized PolySynth for ${preset}`);
         return bundle;
     }
 
@@ -551,7 +564,7 @@ class ToneSynthEngine {
      * Play a note - SYNCHRONOUS for cached synths to avoid timing jitter (Issue #14)
      * Only falls back to async if synth needs to be created
      */
-    playNote(trackId: number, preset: string, note: number | string, duration: string | number, velocity: number, time?: number) {
+    playNote(trackId: number, note: number | string, duration: string | number, velocity: number, preset: string, time?: number) {
         const key = `${trackId}-${preset}`;
 
         // Fast path: synth already cached - no async, no jitter
@@ -560,7 +573,7 @@ class ToneSynthEngine {
                 const bundle = this.trackSynths.get(key);
                 bundle.synth.triggerAttackRelease(note, duration, time, velocity);
             } catch (e) {
-                console.error("Error playing synth note:", e);
+                logger.error("Error playing synth note:", e);
             }
             return;
         }
@@ -573,9 +586,9 @@ class ToneSynthEngine {
                 const adjustedTime = time !== undefined ? time + 0.05 : undefined;
                 bundle.synth.triggerAttackRelease(note, duration, adjustedTime, velocity);
             } catch (e) {
-                console.error("Error playing synth note (async):", e);
+                logger.error("Error playing synth note (async):", e);
             }
-        }).catch(e => console.error("Error getting synth:", e));
+        }).catch(e => logger.error("Error getting synth:", e));
     }
 
     /**
@@ -603,7 +616,7 @@ class ToneSynthEngine {
                 cachedBundle.synth.triggerAttackRelease(note, '8n', undefined, velocity);
                 this.lastPreviewNote = { key, note };
             } catch (e) {
-                console.error("Error in previewNote (cached):", e);
+                logger.error("Error in previewNote (cached):", e);
             }
             return;
         }
@@ -615,9 +628,9 @@ class ToneSynthEngine {
                 bundle.synth.triggerAttackRelease(note, '8n', undefined, velocity);
                 this.lastPreviewNote = { key, note };
             } catch (e) {
-                console.error("Error in previewNote (async):", e);
+                logger.error("Error in previewNote (async):", e);
             }
-        }).catch(e => console.error("Error getting synth for preview:", e));
+        }).catch(e => logger.error("Error getting synth for preview:", e));
     }
 
     /**
@@ -633,11 +646,11 @@ class ToneSynthEngine {
         try {
             // Convert MIDI notes to frequencies if they are numbers
             const freqs = notes.map(n =>
-                typeof n === 'number' ? new (ToneLib.Frequency as any)(n, "midi").toFrequency() : n
+                typeof n === 'number' ? new ToneLib.Frequency(n, "midi").toFrequency() : n
             );
             bundle.synth.triggerAttackRelease(freqs, duration, time, velocity);
         } catch (e) {
-            console.error("Error playing chord:", e);
+            logger.error("Error playing chord:", e);
         }
     }
 
@@ -652,13 +665,13 @@ class ToneSynthEngine {
     dispose() {
         this.trackSynths.forEach(bundle => {
             try { bundle.synth.dispose(); } catch { }
-            bundle.effects?.forEach((e: any) => tryDispose(e));
+            bundle.effects?.forEach((e: DisposableNode) => tryDispose(e));
         });
         this.trackSynths.clear();
     }
 }
 
-function tryDispose(obj: any) {
+function tryDispose(obj: DisposableNode) {
     try {
         if (typeof obj.dispose === 'function') obj.dispose();
     } catch { }

@@ -1,6 +1,7 @@
 import { ensureTone } from '../toneWrapper';
 import type { ToneLibType } from '../toneWrapper';
 import { audioEngine } from '../audioEngine';
+import { logger } from '../logger';
 import type { VocalEngineInterface } from '../engineTypes';
 
 /**
@@ -449,16 +450,16 @@ class ToneVocalEngine implements VocalEngineInterface {
         if (!this.initialized) await this.initialize();
         const bundle = await this.getSynth(trackId, type);
         const ToneLib = await ensureTone() as ToneLibType;
-        const n = (ToneLib as any).Frequency(note, 'midi').toNote();
-        bundle.synth.triggerAttackRelease?.(n, '4n', time ?? (ToneLib as any).now());
+        const n = new ToneLib.Frequency(note, 'midi').toNote();
+        bundle.synth.triggerAttackRelease?.(n, '4n', time ?? ToneLib.now());
     }
 
     async playNote(trackId: number, note: number | string, duration: string | number, velocity: number, preset: string, time?: number) {
         if (!this.initialized) await this.initialize();
         const bundle = await this.getSynth(trackId, preset);
         const ToneLib = await ensureTone() as ToneLibType;
-        const n = typeof note === 'number' ? (ToneLib as any).Frequency(note, 'midi').toNote() : note;
-        bundle.synth.triggerAttackRelease?.(n, duration, time ?? (ToneLib as any).now(), velocity);
+        const n = typeof note === 'number' ? new ToneLib.Frequency(note, 'midi').toNote() : note;
+        bundle.synth.triggerAttackRelease?.(n, duration, time ?? ToneLib.now(), velocity);
     }
 
     /**
@@ -483,13 +484,13 @@ class ToneVocalEngine implements VocalEngineInterface {
         // FAST PATH: If synth is already cached, play immediately
         const cachedBundle = this.trackSynths.get(key);
         if (cachedBundle) {
-            ensureTone().then((ToneLib: any) => {
-                const n = typeof note === 'number' ? ToneLib.Frequency(note, 'midi').toNote() : note;
+            ensureTone().then((ToneLib: ToneLibType) => {
+                const n = typeof note === 'number' ? new ToneLib.Frequency(note, 'midi').toNote() : note;
                 try {
                     cachedBundle.synth.triggerAttackRelease?.(n, '8n', undefined, velocity);
                     this.lastPreviewNote = { key, note: n };
                 } catch (e) {
-                    console.error("Error in previewNote (cached):", e);
+                    logger.error("Error in previewNote (cached):", e);
                 }
             });
             return;
@@ -497,22 +498,22 @@ class ToneVocalEngine implements VocalEngineInterface {
 
         // SLOW PATH: Synth not cached, create it async and play when ready
         this.getSynth(trackId, preset).then(async bundle => {
-            const ToneLib = await ensureTone() as any;
-            const n = typeof note === 'number' ? ToneLib.Frequency(note, 'midi').toNote() : note;
+            const ToneLib = await ensureTone();
+            const n = typeof note === 'number' ? new ToneLib.Frequency(note, 'midi').toNote() : note;
             try {
                 bundle.synth.triggerAttackRelease?.(n, '8n', undefined, velocity);
                 this.lastPreviewNote = { key, note: n };
             } catch (e) {
-                console.error("Error in previewNote (async):", e);
+                logger.error("Error in previewNote (async):", e);
             }
-        }).catch(e => console.error("Error getting synth for preview:", e));
+        }).catch(e => logger.error("Error getting synth for preview:", e));
     }
 
     async playChord(trackId: number, preset: string, notes: (number | string)[], duration: string | number, velocity: number) {
         if (!this.initialized) await this.initialize();
         const bundle = await this.getSynth(trackId, preset);
         const ToneLib = await ensureTone() as ToneLibType;
-        const n = notes.map(x => typeof x === 'number' ? ToneLib.Frequency(x, 'midi').toNote() : x);
+        const n = notes.map(x => typeof x === 'number' ? new ToneLib.Frequency(x, 'midi').toNote() : x);
         bundle.synth.triggerAttackRelease?.(n, duration, ToneLib.now(), velocity);
     }
 

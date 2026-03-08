@@ -184,8 +184,23 @@ const PianoRollCanvas = forwardRef<PianoRollCanvasHandle, PianoRollCanvasProps>(
             }
 
             ctx.fillStyle = isSelected ? '#ffffff' : trackColor;
+            // Velocity modulates opacity (0.3 min to 1.0 max)
+            const vel = note.velocity ?? 0.8;
+            const alpha = 0.3 + vel * 0.7;
+            if (!isSelected) {
+                ctx.globalAlpha = alpha;
+            }
             ctx.fillRect(x, y, w, NOTE_HEIGHT - 1);
+            ctx.globalAlpha = 1;
             ctx.shadowBlur = 0;
+
+            // Velocity indicator bar at bottom of note
+            if (w > 6) {
+                const velHeight = 2;
+                const velWidth = vel * w;
+                ctx.fillStyle = isSelected ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.35)';
+                ctx.fillRect(x, y + NOTE_HEIGHT - 1 - velHeight, velWidth, velHeight);
+            }
 
             if (w > 24) {
                 ctx.fillStyle = isSelected ? 'black' : 'rgba(0,0,0,0.6)';

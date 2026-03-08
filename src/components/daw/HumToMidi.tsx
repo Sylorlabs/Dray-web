@@ -6,6 +6,7 @@ import { pitchDetector, PitchResult, MIDINoteEvent } from '../../lib/pitchDetect
 import { audioEngine } from '../../lib/audioEngine';
 import { toneSynthEngine } from '../../lib/toneEngine';
 import type { MidiNote } from '../../lib/types';
+import { logger } from '../../lib/logger';
 import styles from './humtomidi.module.css';
 
 interface HumToMidiProps {
@@ -38,7 +39,7 @@ export default function HumToMidi({ onNotesRecorded, onClose, trackColor = '#586
             }
         } catch (err) {
             setError('Failed to initialize. Check microphone permissions.');
-            console.error(err);
+            logger.error(err);
         }
     }, []);
 
@@ -60,7 +61,7 @@ export default function HumToMidi({ onNotesRecorded, onClose, trackColor = '#586
                     setRecordedNotes(prev => [...prev, note]);
                 }
                 // Play the detected note (trackId=-1 for preview)
-                toneSynthEngine.playNote(-1, 'Grand Piano', note.pitch, '8n', 0.5);
+                toneSynthEngine.playNote(-1, note.pitch, '8n', 0.5, 'Grand Piano');
             }
         );
     }, [isRecording]);

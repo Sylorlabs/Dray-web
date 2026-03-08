@@ -1,36 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Drey — Browser-Based DAW
+
+Drey is a free, open-source Digital Audio Workstation that runs entirely in your browser. Built for beginners and creative producers who want to make music without downloading software.
+
+## Features
+
+- **75+ Synthesized Instruments** — Bass, drums, keys, leads, pads, vocals, and FX using Tone.js synthesis
+- **Piano Roll Editor** — Full MIDI editing with grid snapping, velocity control, and real-time preview
+- **Multi-Engine Audio** — Dedicated engines for bass, drums, keys, synths, vocals, and FX
+- **AI Assistant (Wingman)** — Natural language music creation powered by Grok AI
+- **Hum-to-MIDI** — Real-time pitch detection converts humming/singing to MIDI notes
+- **Audio Stem Separation** — Frequency-based separation of audio into bass, drums, vocals, and instruments
+- **Pattern Generators** — One-click drum beats, chord progressions, and bass lines
+- **Undo/Redo** — Full history with Ctrl+Z / Ctrl+Shift+Z support
+- **Dark/Light Theme** — Automatic and manual theme switching
+- **Local Storage** — Projects save automatically to your browser (no account needed)
+
+## Tech Stack
+
+- **Framework**: Next.js 16 (App Router) + React 19
+- **Audio**: Tone.js + Web Audio API + AudioWorklet scheduler
+- **State**: Zustand
+- **Database**: Dexie (IndexedDB)
+- **Styling**: CSS Modules + CSS Variables
+- **AI**: Grok API (xAI) via server-side API route
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp .env.example .env.local
+# Add your GROK_API_KEY to .env.local (optional, for AI features)
+
+# Start development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to see the landing page. Click "Launch App" to open the DAW.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+├── app/              # Next.js App Router pages
+│   ├── api/          # Server-side API routes (Wingman AI)
+│   ├── daw/          # Main DAW application page
+│   └── page.tsx      # Landing page
+├── components/       # React components
+│   └── daw/          # DAW-specific components (PianoRoll, Transport, etc.)
+├── hooks/            # Custom React hooks
+├── lib/              # Core libraries
+│   ├── engines/      # Tone.js instrument engines (bass, drums, keys, etc.)
+│   ├── presets/      # Synth preset definitions
+│   └── worker/       # Web Worker for scheduling
+├── store/            # Zustand state management
+└── styles/           # Global styles
+```
 
-## Learn More
+## Scripts
 
-To learn more about Next.js, take a look at the following resources:
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start dev server |
+| `npm run build` | Production build |
+| `npm run start` | Start production server |
+| `npm run lint` | Run ESLint |
+| `npm run test` | Run Jest tests |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Browser Support
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Drey requires a modern browser with Web Audio API and AudioWorklet support:
+- Chrome 66+
+- Firefox 76+
+- Safari 14.1+
+- Edge 79+
 
-## Deploy on Vercel
+## License
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT

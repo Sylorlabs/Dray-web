@@ -52,7 +52,7 @@ function postTick(tickIndex: number, perfTimeMs: number) {
     // compute engine time in seconds
     const engineTime = perfToEngineOffset + msToSec(perfTimeMs);
     // post message
-    (self as any).postMessage({ type: 'tick', tickIndex, engineTime });
+    (self as unknown as DedicatedWorkerGlobalScope).postMessage({ type: 'tick', tickIndex, engineTime });
 }
 
 async function workerLoop() {

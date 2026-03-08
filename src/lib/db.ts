@@ -1,43 +1,7 @@
 import Dexie, { Table } from 'dexie';
+import type { Project, Track, Clip, MidiNote } from './types';
 
-export interface Project {
-    id?: number;
-    name: string;
-    createdAt: number;
-    updatedAt: number;
-    tempo: number;
-    timeSignature: string;
-}
-
-export interface MidiNote {
-    pitch: number;
-    start: number;
-    duration: number;
-    velocity: number;
-}
-
-export interface Clip {
-    start: number;
-    duration: number;
-    name: string;
-    notes?: MidiNote[];
-}
-
-export interface Track {
-    id?: number;
-    projectId?: number; // Optional for local UI state before DB save
-    name: string;
-    type: 'audio' | 'midi' | 'drums';
-    muted: boolean;
-    soloed: boolean;
-    volume: number;
-    pan: number;
-    color?: string;
-    instrument?: string;
-    clips: Clip[];
-    meterL?: number;
-    meterR?: number;
-}
+export type { Project, Track, Clip, MidiNote };
 
 export interface AudioSample {
     id?: number;

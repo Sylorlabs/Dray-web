@@ -3,6 +3,9 @@ import type { MidiNote } from '../../lib/types';
 import { NOTE_HEIGHT } from '../../lib/constants';
 import { PianoRollCanvasHandle } from './PianoRollCanvas';
 
+// Clipboard for copy/paste (module-level so it persists across re-renders)
+let noteClipboard: MidiNote[] = [];
+
 interface UsePianoRollInteractionProps {
     notes: MidiNote[];
     onNotesChange: (notes: MidiNote[]) => void;
@@ -288,6 +291,47 @@ export function usePianoRollInteraction({
                 setSelectedNotes(new Set(notes.map(n => n.id)));
                 return;
             }
+            // Copy
+            if (e.key === 'c' || e.key === 'C') {
+                e.preventDefault();
+                noteClipboard = notes.filter(n => selectedNotes.has(n.id));
+                return;
+            }
+            // Paste
+            if (e.key === 'v' || e.key === 'V') {
+                e.preventDefault();
+                if (noteClipboard.length === 0) return;
+                const minStart = Math.min(...noteClipboard.map(n => n.start));
+                // Find the end of existing notes to paste after, or use last selected note's position
+                const pasteOffset = notes.length > 0
+                    ? Math.max(...notes.map(n => n.start + n.duration))
+                    : 0;
+                const newNotes = noteClipboard.map(n => ({
+                    ...n,
+                    id: `paste_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+                    start: n.start - minStart + pasteOffset
+                }));
+                onNotesChange([...notes, ...newNotes]);
+                setSelectedNotes(new Set(newNotes.map(n => n.id)));
+                return;
+            }
+            // Duplicate selected
+            if (e.key === 'd' || e.key === 'D') {
+                e.preventDefault();
+                if (selectedNotes.size === 0) return;
+                const selected = notes.filter(n => selectedNotes.has(n.id));
+                const maxEnd = Math.max(...selected.map(n => n.start + n.duration));
+                const minStart = Math.min(...selected.map(n => n.start));
+                const offset = maxEnd - minStart;
+                const duped = selected.map(n => ({
+                    ...n,
+                    id: `dup_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+                    start: n.start + offset
+                }));
+                onNotesChange([...notes, ...duped]);
+                setSelectedNotes(new Set(duped.map(n => n.id)));
+                return;
+            }
             if (e.key === '=' || e.key === '+') {
                 e.preventDefault();
                 setZoom(z => Math.min(MAX_ZOOM, z + 10));
@@ -309,8 +353,8 @@ export function usePianoRollInteraction({
             return;
         }
 
-        // Arrows (Move/Transpose)
-        if (selectedNotes.size > 0 && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        // Arrows (Move/Transpose) — skip if Alt is held (used for velocity)
+        if (!e.altKey && selectedNotes.size > 0 && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
             e.preventDefault();
 
             const isShift = e.shiftKey;
@@ -361,6 +405,17 @@ export function usePianoRollInteraction({
                 const note = newNotes.find(n => n.id === firstId);
                 if (note) playNotePreview(note.pitch);
             }
+        }
+
+        // Alt+Arrow Up/Down = velocity adjust
+        if (e.altKey && selectedNotes.size > 0 && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+            e.preventDefault();
+            const delta = e.key === 'ArrowUp' ? 0.05 : -0.05;
+            const newNotes = notes.map(n => {
+                if (!selectedNotes.has(n.id)) return n;
+                return { ...n, velocity: Math.max(0.05, Math.min(1, (n.velocity ?? 0.8) + delta)) };
+            });
+            onNotesChange(newNotes);
         }
     }, [selectedNotes, notes, gridSize, onNotesChange, isPlaying, playNotePreview, setZoom, MAX_ZOOM, MIN_ZOOM, snap]);
 

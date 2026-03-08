@@ -6,10 +6,12 @@ import styles from './audioeditor.module.css';
 import { useProjectStore } from '../../store/useProjectStore';
 import type { Clip, Track } from '../../lib/types';
 import { audioEngine } from '../../lib/audioEngine';
+import { logger } from '../../lib/logger';
 
 interface AudioEditorProps {
     track: Track;
     onTrackChange: (track: Track) => void;
+    advancedMode?: boolean;
     onClose: () => void;
 }
 
@@ -18,7 +20,7 @@ const PREVIEW_RETRY_DELAY_MS = 500;
 const MAX_PREVIEW_RETRIES = 2;
 const TOTAL_PREVIEW_ATTEMPTS = MAX_PREVIEW_RETRIES + 1;
 
-export default function AudioEditor({ track, onTrackChange, onClose }: AudioEditorProps) {
+export default function AudioEditor({ track, onTrackChange, advancedMode = false, onClose }: AudioEditorProps) {
     const { isPlaying, togglePlay: storeTogglePlay } = useProjectStore();
     const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
     const [zoom, setZoom] = useState(1);
@@ -31,7 +33,7 @@ export default function AudioEditor({ track, onTrackChange, onClose }: AudioEdit
     const previewSourceRef = useRef<AudioBufferSourceNode | null>(null);
 
     const selectedClip = useMemo(() =>
-        track.clips.find(c => (c as any).id === selectedClipId) || track.clips[0],
+        track.clips.find(c => c.id === selectedClipId) || track.clips[0],
         [track.clips, selectedClipId]
     );
 
@@ -80,13 +82,13 @@ export default function AudioEditor({ track, onTrackChange, onClose }: AudioEdit
 
     // Preview playback - play the selected clip's audio
     const handlePreviewPlay = async () => {
-        if (!selectedClip || !(selectedClip as any).url) return;
+        if (!selectedClip || !selectedClip.audioUrl) return;
 
         // Stop any existing preview
         handlePreviewStop();
         setPreviewError(null);
 
-        const url = (selectedClip as any).url;
+        const url = selectedClip.audioUrl;
         let retryCount = 0;
 
         const attemptPlay = async (): Promise<void> => {
@@ -108,7 +110,7 @@ export default function AudioEditor({ track, onTrackChange, onClose }: AudioEdit
                 source.connect(ctx.destination);
 
                 // Apply pitch shift if specified
-                const pitch = (selectedClip as any).pitch ?? 0;
+                const pitch = selectedClip.pitch ?? 0;
                 if (pitch !== 0) {
                     source.playbackRate.value = Math.pow(2, pitch / 12);
                 }
@@ -122,11 +124,11 @@ export default function AudioEditor({ track, onTrackChange, onClose }: AudioEdit
                 previewSourceRef.current = source;
                 setIsPreviewing(true);
             } catch (e) {
-                console.error(`Failed to play audio preview (attempt ${retryCount + 1}/${TOTAL_PREVIEW_ATTEMPTS}):`, e);
+                logger.error(`Failed to play audio preview (attempt ${retryCount + 1}/${TOTAL_PREVIEW_ATTEMPTS}):`, e);
                 
                 if (retryCount < MAX_PREVIEW_RETRIES) {
                     retryCount++;
-                    console.log(`Retrying preview playback (${retryCount}/${MAX_PREVIEW_RETRIES})...`);
+                    logger.debug(`Retrying preview playback (${retryCount}/${MAX_PREVIEW_RETRIES})...`);
                     // Wait before retrying with exponential backoff
                     await new Promise(resolve => setTimeout(resolve, PREVIEW_RETRY_DELAY_MS * retryCount));
                     return attemptPlay();
@@ -135,7 +137,7 @@ export default function AudioEditor({ track, onTrackChange, onClose }: AudioEdit
                     setIsPreviewing(false);
                     const errorMsg = `Failed to play audio preview after ${TOTAL_PREVIEW_ATTEMPTS} attempts. The audio file may be corrupted or unavailable.`;
                     setPreviewError(errorMsg);
-                    console.error(errorMsg);
+                    logger.error(errorMsg);
                 }
             }
         };
@@ -289,51 +291,57 @@ export default function AudioEditor({ track, onTrackChange, onClose }: AudioEdit
                         <input
                             type="range" min="0" max="2" step="0.1"
                             className={styles.range}
-                            value={(selectedClip as any)?.gain ?? 1}
+                            value={selectedClip?.gain ?? 1}
                             onChange={(e) => handleClipParamChange('gain', parseFloat(e.target.value))}
                         />
-                        <div className={styles.value}>{Math.round(((selectedClip as any)?.gain ?? 1) * 100)}%</div>
+                        <div className={styles.value}>{Math.round((selectedClip?.gain ?? 1) * 100)}%</div>
                     </div>
 
-                    <div className={styles.controlGroup}>
-                        <div className={styles.label}>Pitch (Semitones)</div>
-                        <div className={styles.inputRow}>
-                            <input
-                                type="range" min="-12" max="12" step="1"
-                                className={styles.range}
-                                value={(selectedClip as any)?.pitch ?? 0}
-                                onChange={(e) => handleClipParamChange('pitch', parseInt(e.target.value))}
-                            />
-                            <div className={styles.value}>{(selectedClip as any)?.pitch > 0 ? '+' : ''}{(selectedClip as any)?.pitch ?? 0}</div>
-                        </div>
-                    </div>
+                    {advancedMode && (
+                        <>
+                            <div className={styles.controlGroup}>
+                                <div className={styles.label}>Pitch (Semitones)</div>
+                                <div className={styles.inputRow}>
+                                    <input
+                                        type="range" min="-12" max="12" step="1"
+                                        className={styles.range}
+                                        value={selectedClip?.pitch ?? 0}
+                                        onChange={(e) => handleClipParamChange('pitch', parseInt(e.target.value))}
+                                    />
+                                    <div className={styles.value}>{(selectedClip?.pitch ?? 0) > 0 ? '+' : ''}{selectedClip?.pitch ?? 0}</div>
+                                </div>
+                            </div>
 
-                    <div className={styles.controlGroup}>
-                        <div className={styles.label}>Reverse</div>
-                        <label className={styles.inputRow} style={{ cursor: 'pointer' }}>
-                            <input
-                                type="checkbox"
-                                checked={(selectedClip as any)?.reverse ?? false}
-                                onChange={(e) => handleClipParamChange('reverse', e.target.checked)}
-                            />
-                            <span style={{ fontSize: '0.8rem', color: '#ccc' }}>Enabled</span>
-                        </label>
-                    </div>
+                            <div className={styles.controlGroup}>
+                                <div className={styles.label}>Reverse</div>
+                                <label className={styles.inputRow} style={{ cursor: 'pointer' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedClip?.reverse ?? false}
+                                        onChange={(e) => handleClipParamChange('reverse', e.target.checked)}
+                                    />
+                                    <span style={{ fontSize: '0.8rem', color: '#ccc' }}>Enabled</span>
+                                </label>
+                            </div>
+                        </>
+                    )}
 
                     <div style={{ flex: 1 }}></div>
 
-                    <div className={styles.controlGroup}>
-                        <div className={styles.label}>Zoom</div>
-                        <div className={styles.inputRow}>
-                            <button className={styles.closeBtn} onClick={() => {
-                                // Calculate minimum zoom to fit content exactly
-                                const minZoom = 1200 / (maxDuration * PIXELS_PER_BEAT);
-                                setZoom(Math.max(Math.round(minZoom * 10) / 10, zoom - 0.5));
-                            }}><ZoomOut size={16} /></button>
-                            <div className={styles.value}>{zoom}x</div>
-                            <button className={styles.closeBtn} onClick={() => setZoom(Math.min(4, zoom + 0.5))}><ZoomIn size={16} /></button>
+                    {advancedMode && (
+                        <div className={styles.controlGroup}>
+                            <div className={styles.label}>Zoom</div>
+                            <div className={styles.inputRow}>
+                                <button className={styles.closeBtn} onClick={() => {
+                                    // Calculate minimum zoom to fit content exactly
+                                    const minZoom = 1200 / (maxDuration * PIXELS_PER_BEAT);
+                                    setZoom(Math.max(Math.round(minZoom * 10) / 10, zoom - 0.5));
+                                }}><ZoomOut size={16} /></button>
+                                <div className={styles.value}>{zoom}x</div>
+                                <button className={styles.closeBtn} onClick={() => setZoom(Math.min(4, zoom + 0.5))}><ZoomIn size={16} /></button>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 <div className={styles.mainArea}>
@@ -354,7 +362,7 @@ export default function AudioEditor({ track, onTrackChange, onClose }: AudioEdit
                                 return clickedBeat >= c.start && clickedBeat < end;
                             });
 
-                            if (clicked) setSelectedClipId((clicked as any).id);
+                            if (clicked) setSelectedClipId(clicked.id ?? null);
                             // Need to ensure clip has ID in types or generate one.
                         }}
                     />

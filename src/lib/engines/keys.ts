@@ -1,15 +1,28 @@
 import { ensureTone } from '../toneWrapper';
 import type { ToneLibType } from '../toneWrapper';
 import { audioEngine } from '../audioEngine';
+import { logger } from '../logger';
 import { globalReverbs } from './globalReverb'; // Import global reverbs
 import type { KeysEngineInterface } from '../engineTypes';
+
+/** A Tone.js audio node with a dispose method */
+interface DisposableNode {
+    dispose(): void;
+    connect?(dest: unknown): unknown;
+}
+
+/** Bundle of a synth + its effect chain */
+interface KeysSynthBundle {
+    synth: DisposableNode & { triggerAttackRelease?: (...args: unknown[]) => void; triggerRelease?: (...args: unknown[]) => void; releaseAll?: () => void };
+    effects: DisposableNode[];
+}
 
 /**
  * ToneKeysEngine - Premium keyboard synthesis with distinct presets
  * Each preset creates a unique sound character using different synthesis techniques
  */
 class ToneKeysEngine implements KeysEngineInterface {
-    private trackSynths: Map<string, any> = new Map();
+    private trackSynths: Map<string, KeysSynthBundle> = new Map();
     private initialized = false;
     private initializationPromise: Promise<void> | null = null;
     private lastPreviewNote: { key: string, note: number | string } | null = null;
@@ -27,10 +40,10 @@ class ToneKeysEngine implements KeysEngineInterface {
     }
 
     // Helper to add reverb send
-    private attachReverb(source: any, type: 'short' | 'medium' | 'long', amount: number, key: string) {
+    private attachReverb(source: DisposableNode, type: 'short' | 'medium' | 'long', amount: number, key: string) {
         const rev = globalReverbs.getReverb(type);
         if (!rev) return;
-        ensureTone().then((ToneLib: any) => {
+        ensureTone().then((ToneLib: ToneLibType) => {
             const g = new ToneLib.Gain(amount);
             source.connect(g);
             g.connect(rev);
@@ -53,8 +66,8 @@ class ToneKeysEngine implements KeysEngineInterface {
         const ToneLib = await ensureTone() as ToneLibType;
         const dest = this.getDest(trackId);
 
-        let synth: any;
-        let effects: any[] = [];
+        let synth: KeysSynthBundle['synth'];
+        let effects: DisposableNode[] = [];
 
         switch (type) {
             case 'Electric Piano':
@@ -478,8 +491,8 @@ class ToneKeysEngine implements KeysEngineInterface {
         if (!this.initialized) await this.initialize();
         const bundle = await this.getSynth(trackId, preset);
         const ToneLib = await ensureTone() as ToneLibType;
-        const n = typeof note === 'number' ? (ToneLib as any).Frequency(note, 'midi').toNote() : note;
-        bundle.synth.triggerAttackRelease?.(n, duration, time ?? (ToneLib as any).now(), velocity);
+        const n = typeof note === 'number' ? new ToneLib.Frequency(note, 'midi').toNote() : note;
+        bundle.synth.triggerAttackRelease?.(n, duration, time ?? ToneLib.now(), velocity);
     }
 
     /**
@@ -504,13 +517,13 @@ class ToneKeysEngine implements KeysEngineInterface {
         // FAST PATH: If synth is already cached, play immediately
         const cachedBundle = this.trackSynths.get(key);
         if (cachedBundle) {
-            ensureTone().then((ToneLib: any) => {
-                const n = typeof note === 'number' ? ToneLib.Frequency(note, 'midi').toNote() : note;
+            ensureTone().then((ToneLib: ToneLibType) => {
+                const n = typeof note === 'number' ? new ToneLib.Frequency(note, 'midi').toNote() : note;
                 try {
                     cachedBundle.synth.triggerAttackRelease?.(n, '8n', undefined, velocity);
                     this.lastPreviewNote = { key, note: n };
                 } catch (e) {
-                    console.error("Error in previewNote (cached):", e);
+                    logger.error("Error in previewNote (cached):", e);
                 }
             });
             return;
@@ -518,22 +531,22 @@ class ToneKeysEngine implements KeysEngineInterface {
 
         // SLOW PATH: Synth not cached, create it async and play when ready
         this.getSynth(trackId, preset).then(async bundle => {
-            const ToneLib = await ensureTone() as any;
-            const n = typeof note === 'number' ? ToneLib.Frequency(note, 'midi').toNote() : note;
+            const ToneLib = await ensureTone() as ToneLibType;
+            const n = typeof note === 'number' ? new ToneLib.Frequency(note, 'midi').toNote() : note;
             try {
                 bundle.synth.triggerAttackRelease?.(n, '8n', undefined, velocity);
                 this.lastPreviewNote = { key, note: n };
             } catch (e) {
-                console.error("Error in previewNote (async):", e);
+                logger.error("Error in previewNote (async):", e);
             }
-        }).catch(e => console.error("Error getting synth for preview:", e));
+        }).catch(e => logger.error("Error getting synth for preview:", e));
     }
 
     async playChord(trackId: number, preset: string, notes: (number | string)[], duration: string | number, velocity: number) {
         if (!this.initialized) await this.initialize();
         const bundle = await this.getSynth(trackId, preset);
         const ToneLib = await ensureTone() as ToneLibType;
-        const n = notes.map(x => typeof x === 'number' ? ToneLib.Frequency(x, 'midi').toNote() : x);
+        const n = notes.map(x => typeof x === 'number' ? new ToneLib.Frequency(x, 'midi').toNote() : x);
         if (bundle.synth.triggerAttackRelease) bundle.synth.triggerAttackRelease(n, duration, ToneLib.now(), velocity);
     }
 
@@ -546,7 +559,7 @@ class ToneKeysEngine implements KeysEngineInterface {
     dispose() {
         this.trackSynths.forEach(bundle => {
             try { bundle.synth?.dispose?.(); } catch { }
-            bundle.effects?.forEach((e: any) => { try { e?.dispose?.(); } catch { } });
+            bundle.effects?.forEach((e: DisposableNode) => { try { e?.dispose?.(); } catch { } });
         });
         this.trackSynths.clear();
     }

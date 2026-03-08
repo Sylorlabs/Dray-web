@@ -3,7 +3,7 @@
 
 export type ToneLibType = typeof import('tone');
 
-let _tone: any | null = null;
+let _tone: ToneLibType | null = null;
 
 export async function ensureTone(): Promise<ToneLibType> {
     if (!_tone) {

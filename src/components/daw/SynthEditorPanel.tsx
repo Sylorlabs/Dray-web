@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { SYNTH_PRESETS, SynthPreset, OscillatorType, updatePreset, addPreset, findPreset } from '../../lib/presets/synthPresets';
 import { toneSynthEngine } from '../../lib/engines/synth';
 import { audioEngine } from '../../lib/audioEngine';
+import { logger } from '../../lib/logger';
 
 interface SynthEditorPanelProps {
   presetName: string;
@@ -35,9 +36,9 @@ export default function SynthEditorPanel({ presetName, onPresetChange }: SynthEd
           addPreset({ ...(preset as SynthPreset) });
         }
         // notify synth engine to apply changes to active voices (if method exists)
-        try { (toneSynthEngine as any).applyPresetUpdate?.(preset.name, { [field]: value }); } catch (e) { /* method may not exist */ }
+        try { (toneSynthEngine as unknown as { applyPresetUpdate?: (name: string, changes: Record<string, unknown>) => void }).applyPresetUpdate?.(preset.name, { [field]: value }); } catch (e) { /* method may not exist */ }
       } catch (e) {
-        console.error('Failed to apply preset update', e);
+        logger.error('Failed to apply preset update', e);
       }
     }, 180);
   };
@@ -52,9 +53,9 @@ export default function SynthEditorPanel({ presetName, onPresetChange }: SynthEd
     if (!preset) return;
     setStatus('Playing preview...');
     try {
-      toneSynthEngine.playNote(-1, preset.name, previewNote, 0.5, 0.9);
+      toneSynthEngine.playNote(-1, previewNote, 0.5, 0.9, preset.name);
     } catch (e) {
-      console.error('Preview play error', e);
+      logger.error('Preview play error', e);
       setStatus('Preview failed');
       setTimeout(() => setStatus(null), 1500);
     }
@@ -76,7 +77,7 @@ export default function SynthEditorPanel({ presetName, onPresetChange }: SynthEd
       clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => setStatus(null), 1400);
     } catch (e) {
-      console.error('Save preset failed', e);
+      logger.error('Save preset failed', e);
       setStatus('Save failed');
       setTimeout(() => setStatus(null), 1400);
     }
@@ -87,7 +88,7 @@ export default function SynthEditorPanel({ presetName, onPresetChange }: SynthEd
     if (!original) return;
     setPreset({ ...original });
     // apply immediately
-    try { updatePreset(original.name, original); } catch (e) { console.error('reset apply failed', e); }
+    try { updatePreset(original.name, original); } catch (e) { logger.error('reset apply failed', e); }
     setStatus('Reset to original');
     setTimeout(() => setStatus(null), 1200);
   };
@@ -187,11 +188,11 @@ export default function SynthEditorPanel({ presetName, onPresetChange }: SynthEd
               const now = audioEngine.getNow();
               const startTime = now + 0.02; // small offset to allow scheduling
               const endTime = startTime + d;
-              (toneSynthEngine as any).scheduleParamRamp?.(preset.name, ['filter', 'frequency'], s, e, startTime, endTime);
+              (toneSynthEngine as unknown as { scheduleParamRamp?: (name: string, path: string[], start: number, end: number, startTime: number, endTime: number) => void }).scheduleParamRamp?.(preset.name, ['filter', 'frequency'], s, e, startTime, endTime);
               setStatus('Automation scheduled');
               setTimeout(() => setStatus(null), 1200);
             } catch (err) {
-              console.error('Schedule automation failed', err);
+              logger.error('Schedule automation failed', err);
               setStatus('Automation failed');
               setTimeout(() => setStatus(null), 1200);
             }

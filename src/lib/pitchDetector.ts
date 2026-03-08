@@ -1,6 +1,7 @@
 'use client';
 
 import { audioEngine } from './audioEngine';
+import { logger } from './logger';
 
 /**
  * Pitch Detection Service - Converts microphone input to MIDI notes
@@ -80,17 +81,17 @@ class PitchDetector {
             // Create buffer for audio data
             this.buffer = new Float32Array(this.analyser.fftSize);
 
-            console.log('Pitch detector initialized');
+            logger.debug('Pitch detector initialized');
             return true;
         } catch (error) {
-            console.error('Failed to initialize pitch detector:', error);
+            logger.error('Failed to initialize pitch detector:', error);
             return false;
         }
     }
 
     start(onPitch?: (result: PitchResult | null) => void, onNote?: (note: MIDINoteEvent) => void) {
         if (!this.analyser || !this.buffer) {
-            console.error('Pitch detector not initialized');
+            logger.error('Pitch detector not initialized');
             return;
         }
 

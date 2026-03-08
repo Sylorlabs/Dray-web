@@ -2,6 +2,7 @@ import { audioEngine } from './audioEngine';
 import { useProjectStore } from '../store/useProjectStore';
 import { updatePlaybackTime } from '../hooks/usePlaybackTime';
 import { LOOKAHEAD_TIME, SCHEDULER_INTERVAL, BEATS_VISIBLE, getEngineForInstrument } from './constants';
+import { logger } from './logger';
 import type { MidiNote, Track, Clip } from './types';
 
 export class AudioScheduler {
@@ -12,14 +13,20 @@ export class AudioScheduler {
     private current16thNote = 0;
     private startTime = 0;
     private startOffset = 0;
+
+    // Loop region
+    private loopEnabled = false;
+    private loopStartBeat = 0;
+    private loopEndBeat = 16;
     
     // Configuration constants
     private static readonly RETRY_DELAY_MS = 500;
     private static readonly MAX_RETRIES = 2;
     private static readonly TOTAL_ATTEMPTS = AudioScheduler.MAX_RETRIES + 1;
 
-    // Cache for audio buffers and pending loads
+    // Cache for audio buffers and pending loads (LRU bounded)
     private audioBufferCache = new Map<string, AudioBuffer>();
+    private static readonly MAX_BUFFER_CACHE_SIZE = 100;
     private pendingLoads = new Map<string, Promise<void>>();
     
     // Queue for playback requests when buffer is not ready
@@ -50,13 +57,10 @@ export class AudioScheduler {
     private rafId: number | null = null;
 
     // Lazy-loaded engines module
-    private engines: any = null;
+    private engines: typeof import('./toneEngine') | null = null;
 
     // Worklet support
     private workletNode: AudioWorkletNode | null = null;
-
-    // Configurable poll interval
-    private pollIntervalMs = 6;
 
     private constructor() { }
 
@@ -84,7 +88,7 @@ export class AudioScheduler {
                 this.engines.toneFXEngine.initialize(),
             ]);
         } catch (e) {
-            console.error('Failed to start audio scheduler or engines', e);
+            logger.error('Failed to start audio scheduler or engines', e);
             this.stop();
             throw e;
         }
@@ -124,7 +128,7 @@ export class AudioScheduler {
 
         // If we already have a worklet, just restart it
         if (this.workletNode) {
-            console.log("AudioScheduler: Restarting existing Worklet");
+            logger.debug("AudioScheduler: Restarting existing Worklet");
             this.workletNode.port.postMessage({ type: 'start' });
             // Sync tick to current
             this.workletNode.port.postMessage({ type: 'setTick', tick: this.current16thNote });
@@ -144,17 +148,17 @@ export class AudioScheduler {
                         interval: SCHEDULER_INTERVAL / 1000
                     });
 
-                    console.log("AudioScheduler: Using AudioWorklet Metronome for timing");
+                    logger.debug("AudioScheduler: Using AudioWorklet Metronome for timing");
                     workletReady = true;
                 }
             } catch (e) {
-                console.warn('Worklet registration failed, falling back to interval', e);
+                logger.warn('Worklet registration failed, falling back to interval', e);
             }
         }
 
         // 2. Fallback to setInterval
         if (!workletReady) {
-            console.log('AudioScheduler: Starting Interval Scheduler (Fallback)');
+            logger.debug('AudioScheduler: Starting Interval Scheduler (Fallback)');
             this.timerID = setInterval(() => this.scheduler(), SCHEDULER_INTERVAL);
         }
 
@@ -167,11 +171,6 @@ export class AudioScheduler {
     private scheduler() {
         if (!this.isRunning()) return;
 
-        // Debug log to confirm scheduler heartbeat
-        // Debug log to confirm scheduler heartbeat
-        if (Math.random() < 0.01) console.log("Scheduler heartbeat", this.nextNoteTime, audioEngine.getNow(), this.isRunning());
-
-        // While there are notes that will need to play before the next interval
         // Lookahead scheduler loop
         try {
             const now = audioEngine.getNow();
@@ -192,10 +191,17 @@ export class AudioScheduler {
                 this.current16thNote = current16th; // Sync state
 
                 this.scheduleNotesAtTime(this.current16thNote, this.nextNoteTime);
+
+                // Metronome click on quarter notes (every 4th 16th)
+                if (this.current16thNote % 4 === 0) {
+                    const isDownbeat = this.current16thNote % 16 === 0;
+                    audioEngine.playMetronomeClick(this.nextNoteTime, isDownbeat);
+                }
+
                 this.advanceNote();
             }
         } catch (e) {
-            console.error('Scheduler loop error', e);
+            logger.error('Scheduler loop error', e);
             // Don't stop, just log. Stopping kills playback on one error.
         }
     }
@@ -209,32 +215,39 @@ export class AudioScheduler {
         this.current16thNote++;
 
         // Loop logic
-        const maxSteps = this.scopedNotes !== null ? this.scopedLoopEnd * 4 : BEATS_VISIBLE * 4;
-
-        if (this.current16thNote >= maxSteps) {
-            if (this.scopedNotes !== null) {
-                // Loop scoped playback
+        if (this.scopedNotes !== null) {
+            // Scoped (piano roll preview) loop
+            const maxSteps = this.scopedLoopEnd * 4;
+            if (this.current16thNote >= maxSteps) {
                 this.current16thNote = this.scopedLoopStart * 4;
-                // We must clear scheduled notes so they can play again
                 this.scheduledNotes.clear();
-            } else {
-                // Main loop - infinite scroll or loop back?
-                // Current behavior was: reset to 0
+            }
+        } else if (this.loopEnabled && this.loopEndBeat > this.loopStartBeat) {
+            // Main timeline loop region
+            const loopEnd16th = this.loopEndBeat * 4;
+            if (this.current16thNote >= loopEnd16th) {
+                this.current16thNote = this.loopStartBeat * 4;
+                this.scheduledNotes.clear();
+                // Recalculate nextNoteTime to stay in sync
+                const beatsSinceStart = this.current16thNote / 4;
+                this.nextNoteTime = this.startTime + beatsSinceStart * secondsPerBeat;
+            }
+        } else {
+            // No loop — infinite scroll, wrap at BEATS_VISIBLE
+            const maxSteps = BEATS_VISIBLE * 4;
+            if (this.current16thNote >= maxSteps) {
                 this.current16thNote = 0;
                 this.scheduledNotes.clear();
-                // Note: we should probably reset startTime here to keep numbers sane?
-                // But nextNoteTime must remain linear for AudioContext.
-                // So we just wrap the index.
             }
         }
     }
 
     // Worklet message handler refactored to drive the loop
-    private handleWorkletMessage(msg: any) {
+    private handleWorkletMessage(msg: { type: string; time?: number }) {
         if (msg.type === 'tick') {
             // Log sample of ticks to verify flow
             if (Math.random() < 0.005) {
-                console.log("[AudioScheduler] Received tick from Worklet", msg.time);
+                logger.debug("[AudioScheduler] Received tick from Worklet", msg.time);
             }
             // Worklet says "wake up", so we run the scheduler
             this.scheduler();
@@ -262,23 +275,28 @@ export class AudioScheduler {
                 }
                 const arrayBuffer = await response.arrayBuffer();
                 const audioBuffer = await audioEngine.getContext().decodeAudioData(arrayBuffer);
+                // LRU eviction: remove oldest entry if cache is full
+                if (this.audioBufferCache.size >= AudioScheduler.MAX_BUFFER_CACHE_SIZE) {
+                    const oldestKey = this.audioBufferCache.keys().next().value;
+                    if (oldestKey) this.audioBufferCache.delete(oldestKey);
+                }
                 this.audioBufferCache.set(url, audioBuffer);
                 
                 // Flush any pending playback requests for this clip
                 this.flushPendingPlaybackRequests(url);
             } catch (e) {
-                console.error(`Failed to load audio clip (attempt ${retryCount + 1}/${AudioScheduler.TOTAL_ATTEMPTS}):`, url, e);
+                logger.error(`Failed to load audio clip (attempt ${retryCount + 1}/${AudioScheduler.TOTAL_ATTEMPTS}):`, url, e);
                 
                 // Retry up to MAX_RETRIES times
                 if (retryCount < AudioScheduler.MAX_RETRIES) {
-                    console.log(`Retrying decode for ${url}...`);
+                    logger.debug(`Retrying decode for ${url}...`);
                     this.pendingLoads.delete(url);
                     // Wait a bit before retrying with exponential backoff
                     await new Promise(resolve => setTimeout(resolve, AudioScheduler.RETRY_DELAY_MS * (retryCount + 1)));
                     return this.preloadAudioClipInternal(url, retryCount + 1);
                 } else {
                     // Permanently failed after retries - log but don't throw
-                    console.error(`Permanently failed to load audio clip after ${AudioScheduler.TOTAL_ATTEMPTS} attempts:`, url);
+                    logger.error(`Permanently failed to load audio clip after ${AudioScheduler.TOTAL_ATTEMPTS} attempts:`, url);
                     // Clear any pending playback requests since we can't fulfill them
                     this.pendingPlaybackRequests.delete(url);
                 }
@@ -304,7 +322,7 @@ export class AudioScheduler {
         for (let i = 0; i < tracks.length; i++) {
             const track = tracks[i];
             for (let j = 0; j < track.clips.length; j++) {
-                const clip: any = track.clips[j];
+                const clip = track.clips[j] as Clip;
                 if (clip.audioUrl && !this.audioBufferCache.has(clip.audioUrl)) {
                     clipUrls.push(clip.audioUrl);
                 }
@@ -313,19 +331,19 @@ export class AudioScheduler {
         
         if (clipUrls.length === 0) return Promise.resolve();
         
-        console.log(`Preloading ${clipUrls.length} audio clips...`);
+        logger.debug(`Preloading ${clipUrls.length} audio clips...`);
         
         // Load all clips in parallel
         const loadPromises = clipUrls.map(url => 
             this.preloadAudioClip(url).catch(err => {
-                console.error(`Failed to preload clip ${url}:`, err);
+                logger.error(`Failed to preload clip ${url}:`, err);
                 // Don't let one failure stop the rest
                 return Promise.resolve();
             })
         );
         
         await Promise.all(loadPromises);
-        console.log(`Preloaded ${clipUrls.length} audio clips successfully`);
+        logger.debug(`Preloaded ${clipUrls.length} audio clips successfully`);
     }
     
     /**
@@ -335,7 +353,7 @@ export class AudioScheduler {
         const pending = this.pendingPlaybackRequests.get(url);
         if (!pending || pending.length === 0) return;
         
-        console.log(`Flushing ${pending.length} pending playback requests for ${url}`);
+        logger.debug(`Flushing ${pending.length} pending playback requests for ${url}`);
         
         for (const req of pending) {
             // Check if scheduled time has passed
@@ -346,7 +364,7 @@ export class AudioScheduler {
                 const secondsPerBeat = 60.0 / bpm;
                 const secondsPer16th = 0.25 * secondsPerBeat;
                 const nextGridTime = now + secondsPer16th;
-                console.log(`Rescheduling delayed audio from ${req.time} to ${nextGridTime}`);
+                logger.debug(`Rescheduling delayed audio from ${req.time} to ${nextGridTime}`);
                 this.triggerAudio(url, nextGridTime, req.volume, req.pan, req.semitones, req.trackId);
             } else {
                 // Still in future, trigger normally
@@ -366,8 +384,8 @@ export class AudioScheduler {
     }
 
     public async stop() {
-        // Clear interval fallback
-        if (this.timerID && typeof this.timerID !== 'number') {
+        // Clear interval fallback (handle both Node.js and browser return types)
+        if (this.timerID != null) {
             clearInterval(this.timerID);
         }
         this.timerID = null;
@@ -376,7 +394,7 @@ export class AudioScheduler {
         if (this.workletNode) {
             try {
                 this.workletNode.port.postMessage({ type: 'stop' });
-            } catch (e) { console.error(e); }
+            } catch (e) { logger.error(e); }
         }
 
         if (this.storeUnsubscribe) {
@@ -394,7 +412,7 @@ export class AudioScheduler {
             this.engines?.toneKeysEngine.stopAll();
             this.engines?.toneVocalEngine.stopAll();
             this.engines?.toneFXEngine.stopAll?.();
-        } catch (e) { console.error('Engine stopAll error', e); }
+        } catch (e) { logger.error('Engine stopAll error', e); }
 
         // Stop all active sample sources (Issue #18: stoppable samples)
         this.activeSampleSources.forEach((sources) => {
@@ -403,6 +421,13 @@ export class AudioScheduler {
             });
         });
         this.activeSampleSources.clear();
+
+        // Disconnect and clear pooled track audio nodes to prevent memory leaks
+        this.trackAudioNodes.forEach(({ gain, panner }) => {
+            try { gain.disconnect(); } catch { /* already disconnected */ }
+            try { panner.disconnect(); } catch { /* already disconnected */ }
+        });
+        this.trackAudioNodes.clear();
 
         if (this.rafId) {
             cancelAnimationFrame(this.rafId);
@@ -447,6 +472,17 @@ export class AudioScheduler {
         this.scopedLoopEnd = 16;
     }
 
+    // Timeline loop region
+    public setLoop(enabled: boolean, startBeat = 0, endBeat = 16) {
+        this.loopEnabled = enabled;
+        this.loopStartBeat = startBeat;
+        this.loopEndBeat = endBeat;
+    }
+
+    public getLoop() {
+        return { enabled: this.loopEnabled, start: this.loopStartBeat, end: this.loopEndBeat };
+    }
+
     // Main thread fallback scheduler
 
 
@@ -459,7 +495,7 @@ export class AudioScheduler {
                     const key = `${beatNumber}:${this.scopedTrackId}:${note.id}`;
                     if (!this.scheduledNotes.has(key)) {
                         this.scheduledNotes.add(key);
-                        const trackFake = { id: this.scopedTrackId, type: this.scopedTrackType, instrument: this.scopedInstrument } as any;
+                        const trackFake = { id: this.scopedTrackId, type: this.scopedTrackType, instrument: this.scopedInstrument } as unknown as Track;
                         const durationSec = note.duration * (60 / (useProjectStore.getState().activeProject?.tempo || 120));
                         this.triggerNote(trackFake, note, this.scopedInstrument || undefined, time, durationSec);
                     }
@@ -474,6 +510,9 @@ export class AudioScheduler {
         const stepSize = 0.25; // 16th
         const currentBeat = beatNumber * stepSize;
         const tickIndex = beatNumber;
+        // Beat-range window for pre-filtering clips and notes
+        const windowStart = currentBeat;
+        const windowEnd = currentBeat + stepSize;
 
         for (let tI = 0; tI < tracks.length; tI++) {
             const track = tracks[tI];
@@ -483,16 +522,20 @@ export class AudioScheduler {
             for (let cI = 0; cI < track.clips.length; cI++) {
                 const clip: Clip = track.clips[cI];
                 const clipStartBeat = clip.start || 0;
+                const clipEndBeat = clipStartBeat + clip.duration;
 
-                if (track.type === 'audio' || (clip as any).audioUrl) {
-                    const audioUrl = (clip as any).audioUrl;
+                // Fast clip filtering: skip clips entirely outside the scheduling window
+                if (clipEndBeat <= windowStart || clipStartBeat >= windowEnd) continue;
+
+                if (track.type === 'audio' || clip.audioUrl) {
+                    const audioUrl = clip.audioUrl;
                     if (!audioUrl) continue;
                     if (Math.abs(clipStartBeat - currentBeat) < stepSize) {
                         const clipKey = `${tickIndex}:audio:${track.id}:${clipStartBeat}`;
                         if (!this.scheduledNotes.has(clipKey)) {
                             this.scheduledNotes.add(clipKey);
                             const preciseTime = time + (clipStartBeat - currentBeat) * secondsPerBeat;
-                            this.triggerAudio(audioUrl, preciseTime, track.volume, track.pan, (clip as any).pitch || 0, track.id);
+                            this.triggerAudio(audioUrl, preciseTime, track.volume, track.pan, clip.pitch || 0, track.id);
                         }
                     }
                     continue;
@@ -502,17 +545,14 @@ export class AudioScheduler {
                 for (let nI = 0; nI < clip.notes.length; nI++) {
                     const note = clip.notes[nI] as MidiNote;
                     const absNoteStart = clipStartBeat + note.start;
+
+                    // Skip notes outside the scheduling window
+                    if (absNoteStart < windowStart || absNoteStart >= windowEnd) continue;
+
                     const noteDiff = absNoteStart - currentBeat;
-
-                    // Log very close matches to debug if we are missing them
-                    if (Math.abs(noteDiff) < 0.25) {
-                        // console.log(`[Scheduler] Checking note: Track ${track.id} Pitch ${note.pitch} Start ${absNoteStart} Current ${currentBeat} Diff ${noteDiff}`);
-                    }
-
                     if (noteDiff >= 0 && noteDiff < stepSize) {
                         const key = `${tickIndex}:${track.id}:${note.id}`;
                         if (!this.scheduledNotes.has(key)) {
-                            console.log(`[AudioScheduler] Scheduled Note! Track ${track.id} Pitch ${note.pitch} @ ${time.toFixed(3)}s`);
                             this.scheduledNotes.add(key);
                             const noteTimeOffset = noteDiff * secondsPerBeat;
                             const preciseTime = time + noteTimeOffset;
@@ -524,7 +564,18 @@ export class AudioScheduler {
             }
         }
 
-        if (this.scheduledNotes.size > 20000) this.scheduledNotes.clear();
+        // Prune old entries: keys are "tickIndex:...", remove any where tickIndex is more than 1 loop behind
+        if (this.scheduledNotes.size > 500) {
+            const cutoff = this.current16thNote - 64; // 1 bar behind is safe to prune
+            for (const key of this.scheduledNotes) {
+                const tick = parseInt(key.split(':')[0], 10);
+                if (!isNaN(tick) && tick < cutoff) this.scheduledNotes.delete(key);
+            }
+            // Hard cap: if still too large after pruning, force clear
+            if (this.scheduledNotes.size > 1000) {
+                this.scheduledNotes.clear();
+            }
+        }
     }
 
     /**
@@ -572,11 +623,11 @@ export class AudioScheduler {
                 trackId
             });
             
-            console.log(`Audio clip not buffered, queuing playback request: ${url} at time ${time}`);
+            logger.debug(`Audio clip not buffered, queuing playback request: ${url} at time ${time}`);
             
             // Start loading the clip if not already loading
             void this.preloadAudioClip(url).catch(err => {
-                console.error(`Failed to load audio clip for queued playback:`, url, err);
+                logger.error(`Failed to load audio clip for queued playback:`, url, err);
             });
             
             return;
@@ -621,7 +672,7 @@ export class AudioScheduler {
 
 
     private triggerNote(track: Track, note: MidiNote, instrument: string | undefined, time: number, durationSec: number) {
-        console.log(`[AudioScheduler] Triggering Note: Track=${track.id} Pitch=${note.pitch} Time=${time} Duration=${durationSec}`);
+        logger.debug(`[AudioScheduler] Triggering Note: Track=${track.id} Pitch=${note.pitch} Time=${time} Duration=${durationSec}`);
         try {
             if (track.type === 'drums') {
                 void this.engines?.toneDrumMachine.playNote(track.id, note.pitch, note.velocity, time);
@@ -645,12 +696,12 @@ export class AudioScheduler {
                         break;
                     case 'synth':
                     default:
-                        void this.engines?.toneSynthEngine.playNote(track.id, inst, note.pitch, durationSec, note.velocity, time);
+                        void this.engines?.toneSynthEngine.playNote(track.id, note.pitch, durationSec, note.velocity, inst, time);
                         break;
                 }
             }
         } catch (e) {
-            console.error('Error triggering note', e);
+            logger.error('Error triggering note', e);
         }
     }
 
@@ -721,16 +772,12 @@ export class AudioScheduler {
         }
     }
 
-    public setLookahead(lookaheadSeconds: number) {
-        // Not implemented in simplified worklet yet, can add if needed
+    public setNotifyThreshold(_threshold: number) {
+        // TODO: implement — store value and use for notification filtering
     }
 
-    public setNotifyThreshold(threshold: number) {
-        // Not needed for message-based
-    }
-
-    public setPollInterval(ms: number) {
-        this.pollIntervalMs = Math.max(1, ms || 6);
+    public setPollInterval(_ms: number) {
+        // TODO: implement — store value and use as scheduler interval override
     }
 
     public getDiagnostics() {

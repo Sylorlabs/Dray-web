@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { loadCustomPresets } from '../lib/presets/synthPresets';
+import { logger } from '../lib/logger';
 
 type Theme = 'dark' | 'light';
 
@@ -20,7 +21,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         // Check local storage on mount
         // load any custom synth presets saved by the user
-        try { if (typeof window !== 'undefined') loadCustomPresets(); } catch (e) { console.warn('Failed to load custom presets', e); }
+        try { if (typeof window !== 'undefined') loadCustomPresets(); } catch (e) { logger.warn('Failed to load custom presets', e); }
         const saved = localStorage.getItem('drey-theme') as Theme;
         if (saved) {
             setTheme(saved);

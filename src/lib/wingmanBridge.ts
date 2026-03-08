@@ -4,6 +4,8 @@
 type SubcategoryData = { readonly [subcategory: string]: readonly string[] } | readonly string[];
 type SoundLibraryType = Record<string, SubcategoryData>;
 
+import { logger } from './logger';
+
 
 // --- Types ---
 
@@ -125,7 +127,7 @@ export interface ModifyNotePayload {
 // --- Helpers ---
 
 export const getProjectContext = (
-    project: any, // Typed as any to avoid circular deps for now, but really Project type
+    project: { name?: string; tempo?: number; timeSignature?: string } | null,
     tracks: InputTrack[],
     isPlaying: boolean,
     currentTime: number,
@@ -183,7 +185,7 @@ export const parseWingmanResponse = (response: string): { text: string; actions:
                 text = response.replace(jsonMatch[0], '').trim();
             }
         } catch (e) {
-            console.error("Failed to parse Wingman actions", e);
+            logger.error("Failed to parse Wingman actions", e);
         }
     }
 

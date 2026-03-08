@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface PanKnobProps {
     value: number; // -100 to 100
@@ -9,11 +9,51 @@ interface PanKnobProps {
 }
 
 export default function PanKnob({ value, onChange, size = 24 }: PanKnobProps) {
-    const knobRef = useRef<HTMLDivElement>(null);
+    const [localValue, setLocalValue] = useState(value);
     const [isDragging, setIsDragging] = useState(false);
+    const pendingValueRef = useRef<number | null>(null);
+    const rafRef = useRef<number | null>(null);
+
+    useEffect(() => {
+        if (!isDragging) {
+            setLocalValue(value);
+        }
+    }, [value, isDragging]);
+
+    const flushPending = () => {
+        if (pendingValueRef.current === null) return;
+        onChange(pendingValueRef.current);
+        pendingValueRef.current = null;
+    };
+
+    const scheduleOnChange = (nextValue: number) => {
+        pendingValueRef.current = nextValue;
+        if (rafRef.current !== null) return;
+        rafRef.current = requestAnimationFrame(() => {
+            rafRef.current = null;
+            flushPending();
+        });
+    };
+
+    const commitImmediately = () => {
+        if (rafRef.current !== null) {
+            cancelAnimationFrame(rafRef.current);
+            rafRef.current = null;
+        }
+        flushPending();
+    };
+
+    useEffect(() => {
+        return () => {
+            if (rafRef.current !== null) {
+                cancelAnimationFrame(rafRef.current);
+                rafRef.current = null;
+            }
+        };
+    }, []);
 
     // Convert value (-100 to 100) to rotation (-135° to 135°)
-    const rotation = (value / 100) * 135;
+    const rotation = (localValue / 100) * 135;
 
     const handleMouseDown = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -21,16 +61,19 @@ export default function PanKnob({ value, onChange, size = 24 }: PanKnobProps) {
         setIsDragging(true);
 
         const startY = e.clientY;
-        const startValue = value;
+        const startValue = localValue;
 
         const handleMouseMove = (evt: MouseEvent) => {
             const deltaY = startY - evt.clientY;
             const newValue = Math.max(-100, Math.min(100, startValue + deltaY * 2));
-            onChange(Math.round(newValue));
+            const rounded = Math.round(newValue);
+            setLocalValue(rounded);
+            scheduleOnChange(rounded);
         };
 
         const handleMouseUp = () => {
             setIsDragging(false);
+            commitImmediately();
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mouseup', handleMouseUp);
         };
@@ -42,12 +85,18 @@ export default function PanKnob({ value, onChange, size = 24 }: PanKnobProps) {
     // Double-click to reset to center
     const handleDoubleClick = (e: React.MouseEvent) => {
         e.stopPropagation();
+        setLocalValue(0);
         onChange(0);
     };
 
     return (
         <div
-            ref={knobRef}
+            role="slider"
+            aria-label="Pan"
+            aria-valuemin={-100}
+            aria-valuemax={100}
+            aria-valuenow={localValue}
+            tabIndex={0}
             style={{
                 width: size,
                 height: size,
@@ -58,7 +107,7 @@ export default function PanKnob({ value, onChange, size = 24 }: PanKnobProps) {
             }}
             onMouseDown={handleMouseDown}
             onDoubleClick={handleDoubleClick}
-            title={`Pan: ${value > 0 ? `R${value}` : value < 0 ? `L${Math.abs(value)}` : 'C'}`}
+            title={`Pan: ${localValue > 0 ? `R${localValue}` : localValue < 0 ? `L${Math.abs(localValue)}` : 'C'}`}
         >
             <svg
                 width={size}
@@ -66,7 +115,6 @@ export default function PanKnob({ value, onChange, size = 24 }: PanKnobProps) {
                 viewBox="0 0 24 24"
                 style={{ overflow: 'visible' }}
             >
-                {/* Outer ring */}
                 <circle
                     cx="12"
                     cy="12"
@@ -76,7 +124,6 @@ export default function PanKnob({ value, onChange, size = 24 }: PanKnobProps) {
                     strokeWidth="1"
                 />
 
-                {/* Track arc - background */}
                 <path
                     d="M 4.5 17 A 9 9 0 1 1 19.5 17"
                     fill="none"
@@ -85,19 +132,17 @@ export default function PanKnob({ value, onChange, size = 24 }: PanKnobProps) {
                     strokeLinecap="round"
                 />
 
-                {/* Track arc - active (based on value) */}
                 <path
-                    d={value >= 0
+                    d={localValue >= 0
                         ? `M 12 3 A 9 9 0 0 1 ${12 + 9 * Math.sin(rotation * Math.PI / 180)} ${12 - 9 * Math.cos(rotation * Math.PI / 180)}`
                         : `M ${12 + 9 * Math.sin(rotation * Math.PI / 180)} ${12 - 9 * Math.cos(rotation * Math.PI / 180)} A 9 9 0 0 1 12 3`
                     }
                     fill="none"
-                    stroke={value === 0 ? '#555' : '#5865f2'}
+                    stroke={localValue === 0 ? '#555' : '#5865f2'}
                     strokeWidth="2"
                     strokeLinecap="round"
                 />
 
-                {/* Center indicator */}
                 <circle
                     cx="12"
                     cy="12"
@@ -105,7 +150,6 @@ export default function PanKnob({ value, onChange, size = 24 }: PanKnobProps) {
                     fill={isDragging ? '#5865f2' : '#444'}
                 />
 
-                {/* Pointer line */}
                 <line
                     x1="12"
                     y1="12"

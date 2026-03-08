@@ -1,14 +1,27 @@
 import { ensureTone } from '../toneWrapper';
 import type { ToneLibType } from '../toneWrapper';
 import { audioEngine } from '../audioEngine';
+import { logger } from '../logger';
 import type { BassEngineInterface } from '../engineTypes';
+
+/** A Tone.js audio node with a dispose method */
+interface DisposableNode {
+    dispose(): void;
+    connect?(dest: unknown): unknown;
+}
+
+/** Bundle of a synth + its effect chain */
+interface BassSynthBundle {
+    synth: DisposableNode & { triggerAttackRelease?: (...args: unknown[]) => void; triggerRelease?: (...args: unknown[]) => void; releaseAll?: () => void };
+    effects: DisposableNode[];
+}
 
 /**
  * ToneBassEngine - Premium bass synthesis with distinct presets
  * Each preset creates a unique bass sound using different synthesis techniques
  */
 class ToneBassEngine implements BassEngineInterface {
-    private trackSynths: Map<string, any> = new Map();
+    private trackSynths: Map<string, BassSynthBundle> = new Map();
     private initialized = false;
     private initializationPromise: Promise<void> | null = null;
     private lastPreviewNote: { key: string, note: number | string } | null = null;
@@ -20,7 +33,7 @@ class ToneBassEngine implements BassEngineInterface {
         this.initializationPromise = (async () => {
             await audioEngine.initialize();
             const ToneLib = await ensureTone() as ToneLibType;
-            await (ToneLib as any).start();
+            await ToneLib.start();
             this.initialized = true;
         })();
         return this.initializationPromise;
@@ -41,8 +54,8 @@ class ToneBassEngine implements BassEngineInterface {
         const ToneLib = await ensureTone() as ToneLibType;
         const dest = this.getDest(trackId);
 
-        let synth: any;
-        let effects: any[] = [];
+        let synth: BassSynthBundle['synth'];
+        let effects: DisposableNode[] = [];
 
         switch (type) {
             case 'Sub Bass':
@@ -303,8 +316,8 @@ class ToneBassEngine implements BassEngineInterface {
             p = Math.max(0, note - 12);
         }
 
-        const n = typeof p === 'number' ? (ToneLib as any).Frequency(p, 'midi').toNote() : p;
-        const t = time ?? (ToneLib as any).now();
+        const n = typeof p === 'number' ? new ToneLib.Frequency(p, 'midi').toNote() : p;
+        const t = time ?? ToneLib.now();
 
         bundle.synth.triggerAttackRelease?.(n, duration, t, velocity);
     }
@@ -331,13 +344,13 @@ class ToneBassEngine implements BassEngineInterface {
         // FAST PATH: If synth is already cached, play immediately
         const cachedBundle = this.trackSynths.get(key);
         if (cachedBundle) {
-            ensureTone().then((ToneLib: any) => {
-                const n = typeof note === 'number' ? ToneLib.Frequency(note, 'midi').toNote() : note;
+            ensureTone().then((ToneLib: ToneLibType) => {
+                const n = typeof note === 'number' ? new ToneLib.Frequency(note, 'midi').toNote() : note;
                 try {
                     cachedBundle.synth.triggerAttackRelease?.(n, '8n', undefined, velocity);
                     this.lastPreviewNote = { key, note: n };
                 } catch (e) {
-                    console.error("Error in previewNote (cached):", e);
+                    logger.error("Error in previewNote (cached):", e);
                 }
             });
             return;
@@ -345,21 +358,21 @@ class ToneBassEngine implements BassEngineInterface {
 
         // SLOW PATH: Synth not cached, create it async and play when ready
         this.getSynth(trackId, preset).then(async bundle => {
-            const ToneLib = await ensureTone() as any;
+            const ToneLib = await ensureTone() as ToneLibType;
 
             // TRANSPOSE DOWN 1 OCTAVE for Bass Engine feel
             let n = note;
             if (typeof note === 'number') {
-                n = ToneLib.Frequency(Math.max(0, note - 12), 'midi').toNote();
+                n = new ToneLib.Frequency(Math.max(0, note - 12), 'midi').toNote();
             }
 
             try {
                 bundle.synth.triggerAttackRelease?.(n, '8n', undefined, velocity);
                 this.lastPreviewNote = { key, note: n };
             } catch (e) {
-                console.error("Error in previewNote (async):", e);
+                logger.error("Error in previewNote (async):", e);
             }
-        }).catch(e => console.error("Error getting synth for preview:", e));
+        }).catch(e => logger.error("Error getting synth for preview:", e));
     }
 
     stopAll() {
@@ -371,7 +384,7 @@ class ToneBassEngine implements BassEngineInterface {
     dispose() {
         this.trackSynths.forEach(bundle => {
             try { bundle.synth?.dispose?.(); } catch { }
-            bundle.effects?.forEach((e: any) => { try { e?.dispose?.(); } catch { } });
+            bundle.effects?.forEach((e: DisposableNode) => { try { e?.dispose?.(); } catch { } });
         });
         this.trackSynths.clear();
     }

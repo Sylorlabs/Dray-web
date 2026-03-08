@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { memo, useState, useCallback, useRef, useEffect } from 'react';
 import { Sparkles, Send, ChevronLeft } from 'lucide-react';
 import { grokService } from '../../lib/grokService';
 import { getProjectContext, parseWingmanResponse } from '../../lib/wingmanBridge';
 import type { Track, Project, WingmanMessage } from '../../lib/types';
 import { SOUND_LIBRARY } from '../../lib/constants';
 import { usePlaybackTimeRef } from '../../hooks/usePlaybackTime';
+import { logger } from '../../lib/logger';
 import styles from './wingman.module.css';
 
 // SVG Icons
@@ -45,7 +46,7 @@ interface WingmanPanelProps {
     onExecuteActions: (actions: any[]) => void;
 }
 
-export default function WingmanPanel({
+function WingmanPanelInner({
     project,
     tracks,
     selectedTrackId,
@@ -56,9 +57,15 @@ export default function WingmanPanel({
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const timeRef = usePlaybackTimeRef();
+    const chatEndRef = useRef<HTMLDivElement>(null);
     const [messages, setMessages] = useState<WingmanMessage[]>([
         { role: 'ai', text: "Hey! I'm Wingman, your AI producer. What would you like to create today?" }
     ]);
+
+    // Auto-scroll to bottom whenever messages change
+    useEffect(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
 
     const handleSend = useCallback(async () => {
         if (!input.trim() || isLoading) return;
@@ -84,7 +91,7 @@ export default function WingmanPanel({
             const chatHistory = messages.map(m => ({
                 role: m.role === 'ai' ? 'assistant' : 'user',
                 content: m.text
-            })) as any[];
+            })) as { role: 'system' | 'user' | 'assistant'; content: string }[];
 
             chatHistory.push({ role: 'user', content: userMsg.text });
 
@@ -94,11 +101,11 @@ export default function WingmanPanel({
             setMessages(prev => [...prev, { role: 'ai', text }]);
 
             if (actions.length > 0) {
-                console.log('Executing Wingman Actions:', actions);
+                logger.debug('Executing Wingman Actions:', actions);
                 onExecuteActions(actions);
             }
         } catch (err) {
-            console.error(err);
+            logger.error(err);
             setMessages(prev => [...prev, {
                 role: 'ai',
                 text: "Sorry, I encountered an issue connecting to my brain."
@@ -143,6 +150,8 @@ export default function WingmanPanel({
                                 <p>Thinking...</p>
                             </div>
                         )}
+                        {/* Scroll anchor */}
+                        <div ref={chatEndRef} />
                     </div>
 
                     <div className={styles.suggestions}>
@@ -179,3 +188,6 @@ export default function WingmanPanel({
         </aside>
     );
 }
+
+const WingmanPanel = memo(WingmanPanelInner);
+export default WingmanPanel;

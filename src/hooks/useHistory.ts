@@ -10,7 +10,11 @@ interface HistoryState<T> {
 
 interface UseHistoryReturn<T> {
     state: T;
-    setState: (newState: T | ((prev: T) => T), actionName?: string) => void;
+    setState: (
+        newState: T | ((prev: T) => T),
+        actionName?: string,
+        options?: { recordHistory?: boolean }
+    ) => void;
     undo: () => void;
     redo: () => void;
     canUndo: boolean;
@@ -30,7 +34,12 @@ export function useHistory<T>(initialState: T): UseHistoryReturn<T> {
 
     const lastActionRef = useRef<string | null>(null);
 
-    const setState = useCallback((newState: T | ((prev: T) => T), actionName?: string) => {
+    const setState = useCallback((
+        newState: T | ((prev: T) => T),
+        actionName?: string,
+        options?: { recordHistory?: boolean }
+    ) => {
+        const recordHistory = options?.recordHistory ?? true;
         setHistory(prev => {
             const resolvedState = typeof newState === 'function'
                 ? (newState as (prev: T) => T)(prev.present)
@@ -42,6 +51,16 @@ export function useHistory<T>(initialState: T): UseHistoryReturn<T> {
             }
 
             lastActionRef.current = actionName || 'Change';
+
+            // High-frequency interactions (sliders, drag, knobs) can skip history
+            // to avoid undo stack spam and expensive past-array churn.
+            if (!recordHistory) {
+                return {
+                    ...prev,
+                    present: resolvedState,
+                    future: []
+                };
+            }
 
             return {
                 past: [...prev.past, prev.present].slice(-MAX_HISTORY),

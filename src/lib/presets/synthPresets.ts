@@ -1,3 +1,5 @@
+import { logger } from '../logger';
+
 export type OscillatorType = 'sine' | 'square' | 'sawtooth' | 'triangle';
 
 export interface SynthPreset {
@@ -583,6 +585,6 @@ export function loadCustomPresets() {
             else SYNTH_PRESETS[idx] = { ...SYNTH_PRESETS[idx], ...p } as SynthPreset;
         });
     } catch (e) {
-        console.warn('Failed to load custom presets', e);
+        logger.warn('Failed to load custom presets', e);
     }
 }

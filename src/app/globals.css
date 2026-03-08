@@ -96,16 +96,16 @@
   --theme-icon-fill: #fbbf24;
 }
 
-* {
+*, *::before, *::after {
   box-sizing: border-box;
   padding: 0;
   margin: 0;
-  cursor: default;
 }
 
 html,
 body {
   max-width: 100vw;
+  height: 100%;
   overflow-x: hidden;
   background-color: var(--bg-deep);
   color: var(--text-main);
@@ -143,6 +143,45 @@ a {
 
 button {
   cursor: pointer;
+  font-family: inherit;
+}
+
+/* Styled select — replaces OS-native widget */
+select {
+  cursor: pointer;
+  font-family: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: var(--bg-surface);
+  color: var(--text-main);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius-sm);
+  padding: 4px 24px 4px 8px;
+  font-size: 0.75rem;
+  outline: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239494a5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 7px center;
+  transition: border-color 0.15s;
+}
+
+select:hover, select:focus {
+  border-color: var(--accent-primary);
+  color: var(--text-bright);
+}
+
+select option {
+  background: #1a1a28;
+  color: var(--text-main);
+}
+
+input {
+  font-family: inherit;
+}
+
+/* Ensure interactive elements always show correct cursor */
+[role="button"], [tabindex], label[for] {
+  cursor: pointer;
 }
 
 /* Utilities */
@@ -160,6 +199,287 @@ button {
 
 .gradient-text {
   background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+/* Premium Button System */
+.btn-pro {
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.825rem;
+  border: 1px solid var(--border-bright);
+  background: var(--bg-panel);
+  color: var(--text-main);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.btn-pro:hover {
+  background: var(--border-bright);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  border-color: var(--accent-primary);
+}
+
+.btn-pro-primary {
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  border: none;
+  color: white;
+}
+
+.btn-pro-primary:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 0 15px var(--accent-glow);
+}
+
+/* Range Input (Slider) Styling — Fixing 'basic' headers */
+input[type="range"].pro-slider {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  width: 100%;
+  cursor: pointer;
+}
+
+input[type="range"].pro-slider::-webkit-slider-runnable-track {
+  background: var(--border-subtle);
+  height: 4px;
+  border-radius: 2px;
+}
+
+input[type="range"].pro-slider::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 14px;
+  width: 14px;
+  border-radius: 50%;
+  background: white;
+  border: 4px solid var(--accent-primary);
+  margin-top: -5px;
+  /* Adjust to center thumb */
+  box-shadow: 0 0 10px var(--accent-glow);
+  cursor: ew-resize;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+input[type="range"].pro-slider::-webkit-slider-thumb:active {
+  transform: scale(1.3);
+  box-shadow: 0 0 15px var(--accent-glow);
+}
+
+/* ============================================
+   DAW Track Lane — must live in globals.css
+   so styles reach the TrackLane child component
+   ============================================ */
+.track-lane {
+  display: flex;
+  height: 80px;
+  flex-shrink: 0;
+  border-bottom: 1px solid #0c0c12;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.track-lane:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.track-lane.selected {
+  background: rgba(88, 101, 242, 0.08);
+}
+
+.track-lane.muted {
+  opacity: 0.4;
+}
+
+.track-lane.greyed {
+  opacity: 0.35;
+  filter: saturate(0.3);
+}
+
+.track-lane.dragging {
+  opacity: 0.5;
+  background: rgba(88, 101, 242, 0.1);
+}
+
+.track-lane.drop-target {
+  border-top: 2px solid #5865f2;
+  background: rgba(88, 101, 242, 0.08);
+}
+
+.timeline-ruler {
+  height: 24px;
+  display: flex;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.ruler-track-space {
+  width: 200px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border-subtle);
+  overflow: hidden;
+  position: relative;
+  z-index: 5;
+}
+
+.track-header {
+  width: 200px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 1rem;
+  background: #0f0f17;
+  border-right: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+  overflow: hidden;
+  position: relative;
+  z-index: 5;
+}
+
+.track-color {
+  width: 4px;
+  height: 40px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.track-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+}
+
+.track-row-1 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.track-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.track-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.track-btn {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a1a24;
+  border: 1px solid #2a2a3a;
+  color: var(--text-dim);
+  font-size: 0.65rem;
+  font-weight: 800;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.track-btn:hover {
+  background: #2a2a3a;
+  color: var(--text-bright);
+  border-color: #4a4a5a;
+}
+
+.track-btn.mute.active,
+.track-btn.active.mute {
+  background: #ed4245 !important;
+  border-color: #ff5c5c !important;
+  color: white !important;
+}
+
+.track-btn.solo.active,
+.track-btn.active.solo {
+  background: #fee75c !important;
+  border-color: #fff000 !important;
+  color: #000 !important;
+}
+
+.track-content {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.clip {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  border-radius: 4px;
+  border-left: 3px solid;
+  cursor: grab;
+  overflow: hidden;
+  user-select: none;
+}
+
+.clip:active {
+  cursor: grabbing;
+}
+
+.clip:hover {
+  filter: brightness(1.15);
+}
+
+.clip-name {
+  position: absolute;
+  top: 3px;
+  left: 6px;
+  font-size: 0.5rem;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
+  z-index: 1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.clip-notes,
+.clip-waveform {
+  position: absolute;
+  top: 14px;
+  left: 3px;
+  right: 3px;
+  bottom: 3px;
+  width: calc(100% - 6px);
+  height: calc(100% - 17px);
+  overflow: hidden;
+}
+
+.clip-resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 14px;
+  height: 100%;
+  cursor: ew-resize !important;
+  background: transparent;
+  border-right: 3px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0 4px 4px 0;
+  transition: border-color 0.15s, background 0.15s;
+  z-index: 10;
+}
+
+.clip:hover .clip-resize-handle {
+  border-color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.05);
 }

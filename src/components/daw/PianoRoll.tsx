@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { X, Play, Square, Trash2, Grid3X3 } from 'lucide-react';
+import { X, Play, Square, Trash2, Grid3X3, Magnet } from 'lucide-react';
 import { audioEngine } from '../../lib/audioEngine';
 import {
     toneSynthEngine,
@@ -29,6 +29,7 @@ import {
     getEngineForInstrument
 } from '../../lib/constants';
 import type { MidiNote } from '../../lib/types';
+import { logger } from '../../lib/logger';
 import styles from './pianoroll.module.css';
 
 export type Note = MidiNote;
@@ -40,7 +41,7 @@ const getNoteName = (pitch: number) => {
 };
 
 const isBlackKey = (pitch: number) => {
-    return BLACK_KEY_INDICES.includes((pitch % 12) as any);
+    return (BLACK_KEY_INDICES as readonly number[]).includes(pitch % 12);
 };
 
 interface PianoRollProps {
@@ -51,6 +52,7 @@ interface PianoRollProps {
     instrument?: string;
     notes: MidiNote[];
     onNotesChange: (notes: MidiNote[]) => void;
+    advancedMode?: boolean;
     onClose: () => void;
 }
 
@@ -62,6 +64,7 @@ function PianoRollBase({
     instrument,
     notes,
     onNotesChange,
+    advancedMode = false,
     onClose
 }: PianoRollProps) {
     const { isPlaying, togglePlay: storeTogglePlay, setCurrentTime } = useProjectStore();
@@ -111,7 +114,7 @@ function PianoRollBase({
             }
         };
 
-        preview().catch(console.error);
+        preview().catch(logger.error);
         setTimeout(() => { lastPreviewPitch.current = null; }, 100);
     }, [trackType, instrument]);
 
@@ -141,6 +144,18 @@ function PianoRollBase({
         handleKeyDown,
         getYFromPitch
     } = interaction;
+
+    // Quantize notes to nearest grid division
+    const handleQuantize = useCallback(() => {
+        const targetNotes = selectedNotes.size > 0 ? notes.filter(n => selectedNotes.has(n.id)) : notes;
+        if (targetNotes.length === 0) return;
+        const quantized = notes.map(n => {
+            if (selectedNotes.size > 0 && !selectedNotes.has(n.id)) return n;
+            const quantizedStart = Math.round(n.start / gridSize) * gridSize;
+            return { ...n, start: Math.max(0, quantizedStart) };
+        });
+        onNotesChange(quantized);
+    }, [notes, selectedNotes, gridSize, onNotesChange]);
 
     // CUSTOM PLAY BUTTON LOGIC
     // We handle click vs double-click manually to ensure double-click is easy to trigger
@@ -263,6 +278,7 @@ function PianoRollBase({
             tabIndex={0}
             onKeyDown={handleKeyDown}
             onMouseDown={() => containerRef.current?.focus()}
+            aria-label={`Piano roll editor for ${trackName}`}
         >
             <div className={styles.prWindow}>
                 {/* HEADER */}
@@ -278,32 +294,45 @@ function PianoRollBase({
 
                     <div className={styles.controlsRight}>
                         <div className={styles.toolGroup}>
-                            <div className={styles.gridSelectorWrap}>
-                                <button className={styles.toolBtn} onClick={() => setShowGridMenu(!showGridMenu)}>
-                                    <Grid3X3 size={14} />
-                                    <span>{GRID_OPTIONS.find(g => g.value === gridSize)?.label}</span>
-                                </button>
-                                {showGridMenu && (
-                                    <div className={styles.gridDropdown}>
-                                        {GRID_OPTIONS.map(opt => (
-                                            <button
-                                                key={opt.label}
-                                                className={`${styles.gridOption} ${gridSize === opt.value ? styles.gridOptionActive : ''}`}
-                                                onClick={() => { setGridSize(opt.value); setShowGridMenu(false); }}
-                                            >
-                                                {opt.label}
-                                            </button>
-                                        ))}
+                            {advancedMode && (
+                                <>
+                                    <div className={styles.gridSelectorWrap}>
+                                        <button className={styles.toolBtn} onClick={() => setShowGridMenu(!showGridMenu)}>
+                                            <Grid3X3 size={14} />
+                                            <span>{GRID_OPTIONS.find(g => g.value === gridSize)?.label}</span>
+                                        </button>
+                                        {showGridMenu && (
+                                            <div className={styles.gridDropdown}>
+                                                {GRID_OPTIONS.map(opt => (
+                                                    <button
+                                                        key={opt.label}
+                                                        className={`${styles.gridOption} ${gridSize === opt.value ? styles.gridOptionActive : ''}`}
+                                                        onClick={() => { setGridSize(opt.value); setShowGridMenu(false); }}
+                                                    >
+                                                        {opt.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                            </div>
-                            <div className={styles.divider}></div>
+                                    <div className={styles.divider}></div>
+                                </>
+                            )}
                             <button
                                 className={`${styles.deleteBtn} ${selectedNotes.size === 0 ? styles.deleteBtnDisabled : styles.deleteBtnActive}`}
                                 onClick={() => onNotesChange(notes.filter(n => !selectedNotes.has(n.id)))}
                                 disabled={selectedNotes.size === 0}
+                                title="Delete selected notes"
                             >
                                 <Trash2 size={14} />
+                            </button>
+                            <button
+                                className={styles.toolBtn}
+                                onClick={handleQuantize}
+                                title={`Quantize ${selectedNotes.size > 0 ? 'selected' : 'all'} notes to grid`}
+                            >
+                                <Magnet size={14} />
+                                <span style={{ fontSize: '0.65rem' }}>Q</span>
                             </button>
                         </div>
 
@@ -371,10 +400,20 @@ function PianoRollBase({
 
                 <div className={styles.prFooter}>
                     <div className={styles.shortcuts}>
-                        <span><b>DRAG</b> Draw/Move</span>
-                        <span><b>DBL CLICK</b> Delete</span>
-                        <span><b>SHIFT+DRAG</b> Select</span>
-                        <span><b>CTRL±</b> Zoom</span>
+                        {advancedMode ? (
+                            <>
+                                <span><b>DRAG</b> Draw/Move</span>
+                                <span><b>DBL CLICK</b> Delete</span>
+                                <span><b>SHIFT+DRAG</b> Select</span>
+                                <span><b>CTRL±</b> Zoom</span>
+                            </>
+                        ) : (
+                            <>
+                                <span><b>CLICK</b> Add Note</span>
+                                <span><b>DRAG</b> Move/Resize</span>
+                                <span><b>DEL</b> Remove Selected</span>
+                            </>
+                        )}
                     </div>
                     <div>ZOOM {Math.round(zoom)}%</div>
                 </div>

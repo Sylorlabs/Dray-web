@@ -3,16 +3,24 @@
 import React, { useState, useEffect } from 'react';
 import { X, Speaker, Mic, Keyboard, Monitor, User, Volume2, CheckCircle2, AlertTriangle, Activity } from 'lucide-react';
 import { audioEngine } from '../../lib/audioEngine';
+import { logger } from '../../lib/logger';
 import styles from './SettingsModal.module.css';
 
 interface SettingsModalProps {
     isOpen: boolean;
     onClose: () => void;
+    editorMode: 'simple' | 'advanced';
+    onEditorModeChange: (mode: 'simple' | 'advanced') => void;
 }
 
 type Tab = 'audio' | 'midi' | 'interface' | 'account';
 
-export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
+export default function SettingsModal({
+    isOpen,
+    onClose,
+    editorMode,
+    onEditorModeChange
+}: SettingsModalProps) {
     const [activeTab, setActiveTab] = useState<Tab>('audio');
     const [outputs, setOutputs] = useState<MediaDeviceInfo[]>([]);
     const [inputs, setInputs] = useState<MediaDeviceInfo[]>([]);
@@ -22,6 +30,19 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     const [lookAhead, setLookAhead] = useState(0.1);
     const [meterLevel, setMeterLevel] = useState(0);
 
+    // MIDI state
+    const [midiInputs, setMidiInputs] = useState<MIDIInput[]>([]);
+    const [midiOutputs, setMidiOutputs] = useState<MIDIOutput[]>([]);
+    const [connectedMidiId, setConnectedMidiId] = useState<string | null>(null);
+    const [midiSupported, setMidiSupported] = useState(true);
+
+    // Theme state
+    const [selectedTheme, setSelectedTheme] = useState('Drey Dark (Default)');
+
+    // Account state
+    const [username, setUsername] = useState('');
+    const [savedUsername, setSavedUsername] = useState(false);
+
     // Monitor audio levels for the meter
     useEffect(() => {
         let animationFrame: number;
@@ -29,7 +50,6 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             if (!isOpen) return;
 
             try {
-                // Show visual activity feedback based on audio state
                 if (audioEngine.getState() === 'running') {
                     const time = Date.now() / 100;
                     setMeterLevel(Math.abs(Math.sin(time)) * 80);
@@ -45,7 +65,13 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         if (isOpen) {
             updateMeter();
             loadDevices();
+            loadMidiDevices();
             setAudioState(audioEngine.getState() || 'unknown');
+            // Load saved username
+            const saved = localStorage.getItem('drey-username');
+            if (saved) setUsername(saved);
+            const savedTheme = localStorage.getItem('drey-theme-accent');
+            if (savedTheme) setSelectedTheme(savedTheme);
         }
 
         const interval = setInterval(() => {
@@ -64,8 +90,30 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             setOutputs(devices.filter(d => d.kind === 'audiooutput'));
             setInputs(devices.filter(d => d.kind === 'audioinput'));
         } catch (e) {
-            console.error("Failed to load devices", e);
+            logger.error("Failed to load devices", e);
         }
+    };
+
+    const loadMidiDevices = async () => {
+        try {
+            const devices = await audioEngine.getMidiDevices();
+            setMidiInputs(devices.inputs);
+            setMidiOutputs(devices.outputs);
+            setMidiSupported(!!navigator.requestMIDIAccess);
+        } catch (e) {
+            setMidiSupported(false);
+        }
+    };
+
+    const handleConnectMidi = (input: MIDIInput) => {
+        audioEngine.disconnectAllMidiInputs();
+        audioEngine.connectMidiInput(input);
+        setConnectedMidiId(input.id);
+    };
+
+    const handleDisconnectMidi = () => {
+        audioEngine.disconnectAllMidiInputs();
+        setConnectedMidiId(null);
     };
 
     const handleDeviceChange = async (deviceId: string) => {
@@ -81,6 +129,28 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         setLatencyHint(hint);
         setLookAhead(look);
         audioEngine.updatePerformanceSettings(hint, look);
+    };
+
+    const handleThemeChange = (theme: string) => {
+        setSelectedTheme(theme);
+        const root = document.documentElement;
+        if (theme === 'Cyber Blue') {
+            root.style.setProperty('--accent-primary', '#3498db');
+            root.style.setProperty('--accent-secondary', '#2ecc71');
+        } else if (theme === 'Midnight Purple') {
+            root.style.setProperty('--accent-primary', '#9b59b6');
+            root.style.setProperty('--accent-secondary', '#e74c3c');
+        } else {
+            root.style.removeProperty('--accent-primary');
+            root.style.removeProperty('--accent-secondary');
+        }
+        localStorage.setItem('drey-theme-accent', theme);
+    };
+
+    const handleSaveUsername = () => {
+        localStorage.setItem('drey-username', username);
+        setSavedUsername(true);
+        setTimeout(() => setSavedUsername(false), 2000);
     };
 
     if (!isOpen) return null;
@@ -212,7 +282,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                     <select
                                         className={styles.select}
                                         value={latencyHint}
-                                        onChange={(e) => handleChangePerformance(e.target.value as any, lookAhead)}
+                                        onChange={(e) => handleChangePerformance(e.target.value as 'interactive' | 'balanced' | 'playback', lookAhead)}
                                     >
                                         <option value="interactive">Interactive (Fastest)</option>
                                         <option value="balanced">Balanced</option>
@@ -248,10 +318,31 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                         <span className={styles.labelText}>Color Theme</span>
                                         <span className={styles.description}>Choose your vibe</span>
                                     </div>
-                                    <select className={styles.select}>
+                                    <select
+                                        className={styles.select}
+                                        value={selectedTheme}
+                                        onChange={(e) => handleThemeChange(e.target.value)}
+                                    >
                                         <option>Drey Dark (Default)</option>
                                         <option>Cyber Blue</option>
                                         <option>Midnight Purple</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div className={styles.settingGroup}>
+                                <h3>Editor Mode</h3>
+                                <div className={styles.row}>
+                                    <div className={styles.label}>
+                                        <span className={styles.labelText}>Workflow Complexity</span>
+                                        <span className={styles.description}>Simple mode is optimized for beginners</span>
+                                    </div>
+                                    <select
+                                        className={styles.select}
+                                        value={editorMode}
+                                        onChange={(e) => onEditorModeChange(e.target.value as 'simple' | 'advanced')}
+                                    >
+                                        <option value="simple">Simple (Beginner)</option>
+                                        <option value="advanced">Advanced</option>
                                     </select>
                                 </div>
                             </div>
@@ -261,13 +352,120 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     {activeTab === 'midi' && (
                         <div className={styles.section}>
                             <h2 className={styles.sectionTitle}>MIDI Configuration</h2>
+                            {!midiSupported ? (
+                                <div className={styles.settingGroup}>
+                                    <div className={styles.row}>
+                                        <div className={styles.label}>
+                                            <span className={styles.labelText}>Web MIDI</span>
+                                            <span className={styles.description} style={{ color: '#ed4245' }}>
+                                                Web MIDI API is not supported in this browser. Use Chrome or Edge.
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className={styles.settingGroup}>
+                                        <h3>MIDI Inputs</h3>
+                                        {midiInputs.length === 0 ? (
+                                            <div className={styles.row}>
+                                                <div className={styles.label}>
+                                                    <span className={styles.labelText}>No MIDI input devices detected</span>
+                                                    <span className={styles.description}>Connect a MIDI keyboard or controller and refresh</span>
+                                                </div>
+                                                <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={loadMidiDevices}>
+                                                    Refresh
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            midiInputs.map((input) => (
+                                                <div className={styles.row} key={input.id}>
+                                                    <div className={styles.label}>
+                                                        <span className={styles.labelText}>{input.name || 'Unknown Device'}</span>
+                                                        <span className={styles.description}>
+                                                            {connectedMidiId === input.id ? '● Connected' : 'Available'}
+                                                        </span>
+                                                    </div>
+                                                    {connectedMidiId === input.id ? (
+                                                        <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={handleDisconnectMidi}>
+                                                            Disconnect
+                                                        </button>
+                                                    ) : (
+                                                        <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => handleConnectMidi(input)}>
+                                                            Connect
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                    <div className={styles.settingGroup}>
+                                        <h3>MIDI Outputs</h3>
+                                        {midiOutputs.length === 0 ? (
+                                            <div className={styles.row}>
+                                                <div className={styles.label}>
+                                                    <span className={styles.labelText}>No MIDI output devices detected</span>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            midiOutputs.map((output) => (
+                                                <div className={styles.row} key={output.id}>
+                                                    <div className={styles.label}>
+                                                        <span className={styles.labelText}>{output.name || 'Unknown Device'}</span>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    )}
+
+                    {activeTab === 'account' && (
+                        <div className={styles.section}>
+                            <h2 className={styles.sectionTitle}>Profile</h2>
                             <div className={styles.settingGroup}>
+                                <h3>Producer Name</h3>
                                 <div className={styles.row}>
                                     <div className={styles.label}>
-                                        <span className={styles.labelText}>MIDI Inputs</span>
-                                        <span className={styles.description}>Connect keyboards or controllers</span>
+                                        <span className={styles.labelText}>Display Name</span>
+                                        <span className={styles.description}>Used in exported files and project metadata</span>
                                     </div>
-                                    <div style={{ color: '#888', fontStyle: 'italic' }}>No devices detected</div>
+                                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                        <input
+                                            type="text"
+                                            className={styles.select}
+                                            placeholder="Your producer name"
+                                            value={username}
+                                            onChange={(e) => setUsername(e.target.value)}
+                                            style={{ minWidth: 180 }}
+                                        />
+                                        <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={handleSaveUsername}>
+                                            {savedUsername ? '✓ Saved' : 'Save'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className={styles.settingGroup}>
+                                <h3>Storage</h3>
+                                <div className={styles.row}>
+                                    <div className={styles.label}>
+                                        <span className={styles.labelText}>Local Storage</span>
+                                        <span className={styles.description}>Projects and presets are saved locally in your browser</span>
+                                    </div>
+                                    <button
+                                        className={`${styles.btn} ${styles.btnPrimary}`}
+                                        onClick={() => {
+                                            if (confirm('Clear all saved data? This cannot be undone.')) {
+                                                localStorage.clear();
+                                                window.location.reload();
+                                            }
+                                        }}
+                                        style={{ background: '#ed4245' }}
+                                    >
+                                        Clear Data
+                                    </button>
                                 </div>
                             </div>
                         </div>

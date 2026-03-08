@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { memo, useRef } from 'react';
 import { usePlaybackCallback } from '../../hooks/usePlaybackTime';
 
 interface MasterPlayheadProps {
@@ -9,7 +9,7 @@ interface MasterPlayheadProps {
     scrollLeft: number;
 }
 
-export default function MasterPlayhead({ pixelsPerBeat, height, scrollLeft }: MasterPlayheadProps) {
+function MasterPlayheadInner({ pixelsPerBeat, height, scrollLeft }: MasterPlayheadProps) {
     const playheadRef = useRef<HTMLDivElement>(null);
 
     // High-performance direct update
@@ -41,3 +41,6 @@ export default function MasterPlayhead({ pixelsPerBeat, height, scrollLeft }: Ma
         />
     );
 }
+
+const MasterPlayhead = memo(MasterPlayheadInner);
+export default MasterPlayhead;

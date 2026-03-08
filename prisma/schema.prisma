@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  passwordHash  String
+  avatarUrl     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  projects      Project[]
+  collaborations CollabMember[]
+}
+
+model Project {
+  id            String    @id @default(cuid())
+  name          String
+  tempo         Int       @default(120)
+  timeSignature String    @default("4/4")
+  isPublic      Boolean   @default(false)
+  data          String    @default("{}") // Full project JSON (tracks, clips, automation)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  ownerId       String
+  owner         User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  audioFiles    AudioFile[]
+  collabSession CollabSession?
+}
+
+model AudioFile {
+  id            String    @id @default(cuid())
+  filename      String
+  originalName  String
+  mimeType      String
+  size          Int
+  path          String
+  duration      Float?
+  createdAt     DateTime  @default(now())
+
+  projectId     String
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model CollabSession {
+  id            String    @id @default(cuid())
+  inviteCode    String    @unique @default(cuid())
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+
+  projectId     String    @unique
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  members       CollabMember[]
+}
+
+model CollabMember {
+  id            String    @id @default(cuid())
+  role          String    @default("editor")
+  joinedAt      DateTime  @default(now())
+  lastSeen      DateTime  @default(now())
+
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  sessionId     String
+  session       CollabSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sessionId])
+}

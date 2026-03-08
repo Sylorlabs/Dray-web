@@ -114,22 +114,28 @@ const MIDI_DRUM_MAP: Record<number, string> = {
     56: 'cowbell'
 } as const;
 
+/** A Tone.js audio node with a dispose method */
+interface DisposableNode {
+    dispose(): void;
+    connect?(dest: unknown): unknown;
+}
+
 interface TrackDrumBundle {
-    kick: { synth: any; distortion: any; compressor: any };
-    snare: { body: any; noise: any; filter: any; bodyGain: any; noiseGain: any; compressor: any };
-    hihat: { synth: any };
-    clap: { noise: any; filter: any; gain: any };
-    tom: { synth: any };
-    cymbal: { synth: any };
-    cowbell: { synth: any };
-    volume: any; // Master volume for this bundle
+    kick: { synth: InstanceType<ToneLibType['MembraneSynth']>; distortion: InstanceType<ToneLibType['Distortion']>; compressor: InstanceType<ToneLibType['Compressor']> };
+    snare: { body: InstanceType<ToneLibType['MembraneSynth']>; noise: InstanceType<ToneLibType['NoiseSynth']>; filter: InstanceType<ToneLibType['Filter']>; bodyGain: InstanceType<ToneLibType['Gain']>; noiseGain: InstanceType<ToneLibType['Gain']>; compressor: InstanceType<ToneLibType['Compressor']> };
+    hihat: { synth: InstanceType<ToneLibType['MetalSynth']> };
+    clap: { noise: InstanceType<ToneLibType['NoiseSynth']>; filter: InstanceType<ToneLibType['Filter']>; gain: InstanceType<ToneLibType['Gain']> };
+    tom: { synth: InstanceType<ToneLibType['PolySynth']> };
+    cymbal: { synth: InstanceType<ToneLibType['MetalSynth']> };
+    cowbell: { synth: InstanceType<ToneLibType['MetalSynth']> };
+    volume: DisposableNode; // Master volume node for this bundle
 }
 
 class ToneDrumMachine {
     private ToneLib: ToneLibType | null = null;
     private initialized = false;
     private initializationPromise: Promise<void> | null = null;
-    private compressor: any = null;
+    private compressor: InstanceType<ToneLibType['Compressor']> | null = null;
 
     // Voice Pooling: Cache synths per track & kit
     // Key: `${trackId}-${kitName}`

@@ -198,20 +198,22 @@ export type SoundCategoryType = keyof typeof SOUND_LIBRARY;
 export const BASS_PRESETS = [
     'Sub Bass', 'Synth Bass', 'Reese Bass', '808 Bass', 'Acid Bass',
     'FM Bass', 'Wobble Bass', 'Pluck Bass', 'Moog Bass', 'Finger Bass',
-    'Slap Bass', 'Analog Bass'
+    'Slap Bass', 'Analog Bass', 'Fingered Bass', 'Upright Bass'
 ];
 
 export const KEYS_PRESETS = [
     'Electric Piano', 'E-Piano', 'Rhodes', 'Fender Rhodes', 'Wurlitzer',
     'Wurli', 'Clavinet', 'Clav', 'Warm Keys', 'Lofi Keys', 'Lo-Fi Keys',
     'Synth Organ', 'Organ', 'Grand Piano', 'Piano', 'Harpsichord',
-    'Celesta', 'Music Box', 'Marimba', 'Vibes'
+    'Celesta', 'Music Box', 'Marimba', 'Vibes', 'Upright Piano',
+    'Hammond B3', 'Vibraphone', 'Kalimba', 'Bells', 'Glockenspiel'
 ];
 
 export const VOCAL_PRESETS = [
     'Choir', 'Choir Aah', 'Choir Ooh', 'Choir Eeh', 'Vocal Pad',
     'Ethereal Voice', 'Vocoder', 'Gospel Choir', 'Siren',
-    'Vocal', 'Vox', 'Adlib', 'Harmony', 'Ooh', 'Aah'
+    'Vocal', 'Vox', 'Adlib', 'Harmony', 'Ooh', 'Aah',
+    'Vocal Chop', 'Talkbox', 'Vox Lead'
 ];
 
 export const FX_PRESETS = [
@@ -219,35 +221,80 @@ export const FX_PRESETS = [
     'Impact', 'Hit', 'Boom', 'Sweep', 'White Noise Sweep',
     'Laser', 'Zap', 'Sci-Fi', 'Vinyl Crackle', 'Crackle', 'Lo-Fi',
     'Reverse Cymbal', 'Reverse', 'Sub Drop', 'Bass Drop',
-    'Tension', 'Suspense', 'Whoosh', 'Pass By', 'Swell', 'Pad Swell'
+    'Tension', 'Suspense', 'Whoosh', 'Pass By', 'Swell', 'Pad Swell',
+    'White Noise', 'Release', 'Sci-Fi Riser'
 ];
 
 /**
- * Determine which engine should handle a given instrument name
+ * Pre-computed instrument-to-engine mapping for O(1) lookup.
+ * Built once at module load from the preset arrays.
+ */
+const ENGINE_MAP: Map<string, 'bass' | 'keys' | 'vocal' | 'fx' | 'synth'> = (() => {
+    const map = new Map<string, 'bass' | 'keys' | 'vocal' | 'fx' | 'synth'>();
+    for (const p of BASS_PRESETS) map.set(p.toLowerCase(), 'bass');
+    for (const p of KEYS_PRESETS) map.set(p.toLowerCase(), 'keys');
+    for (const p of VOCAL_PRESETS) map.set(p.toLowerCase(), 'vocal');
+    for (const p of FX_PRESETS) map.set(p.toLowerCase(), 'fx');
+    return map;
+})();
+
+/**
+ * Priority-ordered substring rules for fuzzy matching.
+ * More specific multi-word phrases come before shorter ones to avoid
+ * ambiguity (e.g. "Vocal Pad" matches synth before "Vocal" matches vocal).
+ */
+const SUBSTRING_PRIORITY: ReadonlyArray<{ substring: string; engine: 'bass' | 'keys' | 'vocal' | 'fx' | 'synth' }> = [
+    // Multi-word specifics first
+    { substring: 'vocal pad', engine: 'synth' },
+    { substring: 'vocal chop', engine: 'vocal' },
+    { substring: 'white noise', engine: 'fx' },
+    { substring: 'sub drop', engine: 'fx' },
+    { substring: 'bass drop', engine: 'fx' },
+    // Category keywords
+    { substring: 'bass', engine: 'bass' },
+    { substring: 'piano', engine: 'keys' },
+    { substring: 'rhodes', engine: 'keys' },
+    { substring: 'organ', engine: 'keys' },
+    { substring: 'clav', engine: 'keys' },
+    { substring: 'keys', engine: 'keys' },
+    { substring: 'bell', engine: 'keys' },
+    { substring: 'marimba', engine: 'keys' },
+    { substring: 'vibes', engine: 'keys' },
+    { substring: 'kalimba', engine: 'keys' },
+    { substring: 'vocal', engine: 'vocal' },
+    { substring: 'choir', engine: 'vocal' },
+    { substring: 'vox', engine: 'vocal' },
+    { substring: 'riser', engine: 'fx' },
+    { substring: 'impact', engine: 'fx' },
+    { substring: 'sweep', engine: 'fx' },
+    { substring: 'reverse', engine: 'fx' },
+    { substring: 'drop', engine: 'fx' },
+    { substring: 'laser', engine: 'fx' },
+    { substring: 'whoosh', engine: 'fx' },
+    { substring: 'noise', engine: 'fx' },
+    { substring: 'pad', engine: 'synth' },
+    { substring: 'lead', engine: 'synth' },
+    { substring: 'saw', engine: 'synth' },
+    { substring: 'pluck', engine: 'synth' },
+    { substring: 'arp', engine: 'synth' },
+];
+
+/**
+ * Determine which engine should handle a given instrument name.
+ * Uses pre-computed Map for O(1) exact match, falls back to priority-ordered substring scan.
  */
 export function getEngineForInstrument(instrument: string): 'bass' | 'keys' | 'vocal' | 'fx' | 'synth' {
-    const inst = instrument || '';
-
-    // Check Bass presets
-    if (BASS_PRESETS.some(p => inst.includes(p) || inst.toLowerCase().includes(p.toLowerCase()))) {
-        return 'bass';
+    if (!instrument) return 'synth';
+    
+    // O(1) exact match (case-insensitive)
+    const exact = ENGINE_MAP.get(instrument.toLowerCase());
+    if (exact) return exact;
+    
+    // Fallback: priority-ordered substring match (most specific first)
+    const lower = instrument.toLowerCase();
+    for (const { substring, engine } of SUBSTRING_PRIORITY) {
+        if (lower.includes(substring)) return engine;
     }
-
-    // Check Keys presets  
-    if (KEYS_PRESETS.some(p => inst.includes(p) || inst.toLowerCase().includes(p.toLowerCase()))) {
-        return 'keys';
-    }
-
-    // Check Vocal presets
-    if (VOCAL_PRESETS.some(p => inst.includes(p) || inst.toLowerCase().includes(p.toLowerCase()))) {
-        return 'vocal';
-    }
-
-    // Check FX presets
-    if (FX_PRESETS.some(p => inst.includes(p) || inst.toLowerCase().includes(p.toLowerCase()))) {
-        return 'fx';
-    }
-
-    // Default to synth engine
+    
     return 'synth';
 }

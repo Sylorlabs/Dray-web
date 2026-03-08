@@ -1,4 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '../../../lib/logger';
+
+// Simple in-memory rate limiter
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
+const RATE_LIMIT_MAX_REQUESTS = 20; // 20 requests per minute
+
+function isRateLimited(ip: string): boolean {
+    const now = Date.now();
+    const record = rateLimitMap.get(ip);
+    
+    if (!record || now > record.resetTime) {
+        rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
+        return false;
+    }
+    
+    record.count++;
+    return record.count > RATE_LIMIT_MAX_REQUESTS;
+}
+
+// Periodic cleanup of expired entries (every 100 requests)
+let requestCounter = 0;
+function cleanupRateLimitMap() {
+    requestCounter++;
+    if (requestCounter % 100 === 0) {
+        const now = Date.now();
+        for (const [key, record] of rateLimitMap) {
+            if (now > record.resetTime) {
+                rateLimitMap.delete(key);
+            }
+        }
+    }
+}
+
+// Max request body size (characters)
+const MAX_BODY_SIZE = 50_000;
 
 const GROK_API_URL = 'https://api.x.ai/v1/chat/completions';
 
@@ -47,7 +83,6 @@ To perform an action, you MUST output a JSON object in this format inside your r
 9. modify_note: { trackId: number, noteId: string, pitch?: number, start?: number, duration?: number, velocity?: number }
 10. delete_track: { trackId: number }
 11. delete_notes: { trackId: number, noteIds: string[] }
-12. generate_sound: { name: string, duration: number, code: string (JS function body with 'ctx' and 'destination') }
 
 ## CURRENT PROJECT CONTEXT
 The user will provide the current state of the project in the prompt. Use this to refer to tracks by ID or Name.
@@ -63,6 +98,17 @@ Be concise. If you perform an action, briefly mention it (e.g., "I've added a dr
 
 export async function POST(request: NextRequest) {
     try {
+        cleanupRateLimitMap();
+
+        // Rate limiting
+        const ip = request.headers.get('x-forwarded-for') || 'unknown';
+        if (isRateLimited(ip)) {
+            return NextResponse.json(
+                { error: 'Too many requests. Please try again later.' },
+                { status: 429 }
+            );
+        }
+
         const apiKey = process.env.GROK_API_KEY;
 
         if (!apiKey || apiKey === 'your_api_key_here') {
@@ -73,7 +119,32 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
+
+        // Validate body size
+        if (JSON.stringify(body).length > MAX_BODY_SIZE) {
+            return NextResponse.json(
+                { error: 'Request body too large.' },
+                { status: 400 }
+            );
+        }
+
         const { messages, context, useReasoning = false } = body;
+
+        // Validate messages
+        if (!Array.isArray(messages) || messages.length === 0 || messages.length >= 50) {
+            return NextResponse.json(
+                { error: 'messages must be a non-empty array with fewer than 50 items.' },
+                { status: 400 }
+            );
+        }
+        for (const msg of messages) {
+            if (typeof msg.role !== 'string' || typeof msg.content !== 'string') {
+                return NextResponse.json(
+                    { error: 'Each message must have a string role and string content.' },
+                    { status: 400 }
+                );
+            }
+        }
 
         const model = useReasoning ? MODEL_REASONING : MODEL_FAST;
 
@@ -106,7 +177,7 @@ export async function POST(request: NextRequest) {
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('Grok API error:', response.status, errorText);
+            logger.error('Grok API error:', response.status, errorText);
             return NextResponse.json(
                 { error: `Grok API error: ${response.status}` },
                 { status: response.status }
@@ -118,7 +189,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({ content });
     } catch (error) {
-        console.error('API route error:', error);
+        logger.error('API route error:', error);
         return NextResponse.json(
             { error: 'Internal server error' },
             { status: 500 }
