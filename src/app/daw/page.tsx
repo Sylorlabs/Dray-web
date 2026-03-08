@@ -2,8 +2,12 @@
 
 export const dynamic = 'force-dynamic';
 
+<<<<<<< Updated upstream
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
+=======
+import React, { useEffect, useState, useCallback, useRef, memo } from 'react';
+>>>>>>> Stashed changes
 // Note: tone engines are imported dynamically to avoid creating AudioContext on module load
 
 import { Plus } from 'lucide-react';

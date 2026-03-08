@@ -51,7 +51,14 @@ function VolumeMeterInner({
 
         const animate = (currentTime: number) => {
             if (currentTime - lastTime >= FRAME_TIME) {
+<<<<<<< Updated upstream
                 const level = audioEngine.getTrackLevel(trackId);
+=======
+                // Get REAL audio level from engine (single-track — no iteration overhead)
+                const level = audioEngine.getTrackLevel(trackId);
+
+                // Clamp and convert to percentage (0-100)
+>>>>>>> Stashed changes
                 const widthPercent = Math.max(0, Math.min(100, level * 100));
                 if (meterRef.current) {
                     meterRef.current.style.width = `${widthPercent}%`;

@@ -133,6 +133,7 @@ class AudioEngine {
     const input = new this.Tone.Gain(1.0);
     const volume = new this.Tone.Gain(1.0);
     const panner = new this.Tone.Panner(0);
+<<<<<<< Updated upstream
     const meter = new this.Tone.Meter({ smoothing: 0.8 });
 
     // EQ: 3-band
@@ -143,6 +144,9 @@ class AudioEngine {
     // FX sends (wet/dry via crossfade)
     const reverb = new this.Tone.Reverb({ decay: 2.5, preDelay: 0.01, wet: 0 });
     const delay = new this.Tone.FeedbackDelay({ delayTime: 0.3, feedback: 0.3, wet: 0 });
+=======
+    const meter = new this.Tone.Meter({ smoothing: 0.8, normalRange: false });
+>>>>>>> Stashed changes
 
     // Connect chain
     input.connect(eqLow);
@@ -184,6 +188,7 @@ class AudioEngine {
     try { ch.panner.pan.rampTo(value / 100, 0.05); } catch (e) { ch.panner.pan.value = value / 100; }
   }
 
+<<<<<<< Updated upstream
   public updateTrackFX(trackId: number, fx: import('./types').TrackFX) {
     if (!this._isInitialized) return;
     const fxNodes = this.trackFxNodes.get(trackId);
@@ -235,22 +240,36 @@ class AudioEngine {
       }
     }
   }
+=======
+>>>>>>> Stashed changes
   public getTrackLevel(trackId: number): number {
     if (!this.context || !this._isInitialized) return 0;
     const ch = this.trackChannels.get(trackId);
     if (!ch) return 0;
     try {
       const v = ch.meter.getValue();
+<<<<<<< Updated upstream
       // Tone.Meter returns number[] for stereo, number for mono
       const db = Array.isArray(v) ? Math.max(...v) : (typeof v === 'number' ? v : -100);
       return Math.max(0, Math.min(1, (db + 60) / 60));
     } catch { return 0; }
+=======
+      // getValue() returns number (mono) or number[] (stereo) in dB
+      const db = Array.isArray(v) ? Math.max(...v) : (typeof v === 'number' ? v : -100);
+      // Map -60dB→0, 0dB→1 (clamp)
+      return Math.max(0, Math.min(1, (db + 60) / 60));
+    } catch (e) { return 0; }
+>>>>>>> Stashed changes
   }
 
   public getTrackLevels(): Record<number, number> {
     const out: Record<number, number> = {};
     if (!this.context || !this._isInitialized) return out;
+<<<<<<< Updated upstream
     this.trackChannels.forEach((_ch, id: number) => {
+=======
+    this.trackChannels.forEach((_: any, id: number) => {
+>>>>>>> Stashed changes
       out[id] = this.getTrackLevel(id);
     });
     return out;
@@ -344,6 +363,7 @@ class AudioEngine {
     }
   }
 
+<<<<<<< Updated upstream
   // ============================================================
   // METRONOME
   // ============================================================
@@ -417,11 +437,63 @@ class AudioEngine {
         resolve(blob);
       };
       this.mediaRecorder!.stop();
+=======
+  // ── AUDIO RECORDING ──────────────────────────────────────────────────────────
+  private recorder: MediaRecorder | null = null;
+  private recordingChunks: Blob[] = [];
+  private recordingStream: MediaStream | null = null;
+
+  /** Start recording from the default microphone. Resolves immediately. */
+  public async startRecording(): Promise<void> {
+    if (this.recorder && this.recorder.state === 'recording') return;
+
+    this.recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    this.recordingChunks = [];
+
+    // Prefer WAV-capable format, fall back gracefully
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=pcm')
+      ? 'audio/webm;codecs=pcm'
+      : MediaRecorder.isTypeSupported('audio/webm')
+        ? 'audio/webm'
+        : '';
+
+    this.recorder = mimeType ? new MediaRecorder(this.recordingStream, { mimeType }) : new MediaRecorder(this.recordingStream);
+
+    this.recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) this.recordingChunks.push(e.data);
+    };
+
+    this.recorder.start(100); // Collect chunks every 100ms
+  }
+
+  /** Stop recording. Returns a Blob (audio/webm or audio/wav). */
+  public stopRecording(): Promise<Blob> {
+    return new Promise((resolve, reject) => {
+      if (!this.recorder || this.recorder.state === 'inactive') {
+        reject(new Error('No active recording'));
+        return;
+      }
+
+      this.recorder.onstop = () => {
+        const blob = new Blob(this.recordingChunks, { type: this.recorder?.mimeType || 'audio/webm' });
+        // Release mic
+        this.recordingStream?.getTracks().forEach(t => t.stop());
+        this.recordingStream = null;
+        this.recordingChunks = [];
+        resolve(blob);
+      };
+
+      this.recorder.stop();
+>>>>>>> Stashed changes
     });
   }
 
   public isRecording(): boolean {
+<<<<<<< Updated upstream
     return this.mediaRecorder?.state === 'recording';
+=======
+    return this.recorder?.state === 'recording';
+>>>>>>> Stashed changes
   }
 
   public updatePerformanceSettings(latencyHint: 'interactive' | 'balanced' | 'playback', lookAhead: number): void {
